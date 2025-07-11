@@ -18,7 +18,7 @@
   function onScanSuccess(decodedText, decodedResult) {
     document.getElementById("status").innerText = "QR Code reconhecido! Redirecionando...";
     if (decodedText) {
-      window.location.href = `/dashboard/equipamentos/detalhe_equipamento/${decodedText}/`;
+      window.location.href = `${decodedText}`;
     }
   }
 

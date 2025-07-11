@@ -168,9 +168,9 @@
       <h5>{{ user.first_name }} {{ user.last_name }}</h5>
       <p class="mb-0">Matrícula: {{ user.colaborador.matricula }}</p>
       <p class="mb-0 small">
-      <i class="bi bi-envelope me-1"></i>
-      {{ user.email }}
-    </p>
+        <i class="bi bi-envelope me-1"></i>
+        {{ user.email }}
+      </p>
     </div>
 
     <div class="sidebar-menu">
@@ -182,8 +182,30 @@
           <a class="nav-link" href="#"><i class="bi bi-calendar-event"></i> Agendamento</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#"><i class="bi bi-tools"></i> Equipamento</a>
-        </li>
+          <a class="nav-link" data-bs-toggle="collapse" href="#equipamentoSubmenu" role="button" aria-expanded="false"
+            aria-controls="equipamentoSubmenu">
+            <i class="bi bi-tools"></i> Equipamento
+            <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
+          </a>
+          <div class="collapse" id="equipamentoSubmenu">
+            <ul class="nav flex-column ps-4">
+              <li class="nav-item">
+                <a class="nav-link" href="#">
+                  <i class="bi bi-list-ul"></i> Estoque
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">
+                  <i class="bi bi-arrows-move"></i> Movimentação
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">
+                  <i class="bi bi-plus-circle"></i> Cadastrar Material
+                </a>
+              </li>
+            </ul>
+          </div>
         <li class="nav-item">
           <a class="nav-link" href="#"><i class="bi bi-award"></i> Certificações</a>
         </li>
