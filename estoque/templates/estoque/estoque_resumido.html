@@ -1,0 +1,38 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Estoque Resumido{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4>Resumo de Estoque por Equipamento</h4>
+
+  <table class="table table-bordered table-hover mt-4 align-middle text-center">
+    <thead class="table-light">
+      <tr>
+        <th>Imagem</th>
+        <th>Equipamento</th>
+        <th>Total de Quantidade</th>
+        
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in equipamentos %}
+        <tr>
+          <td style="width: 100px;">
+            {% if item.foto %}
+              <img src="{{ item.foto }}" alt="Foto" class="img-thumbnail" style="max-width: 80px;">
+            {% else %}
+              <span class="text-muted">Sem imagem</span>
+            {% endif %}
+          </td>
+          <td>{{ item.equipamento }}</td>
+          <td><strong>{{ item.total_quantidade }}</strong></td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="3" class="text-center">Nenhum dado encontrado.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

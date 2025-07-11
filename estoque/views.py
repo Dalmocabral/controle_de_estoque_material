@@ -11,6 +11,8 @@ from .models import Colaborador, Equipamento
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
+from django.db.models import Sum, Max
+from django.http import JsonResponse
 
 
 
@@ -166,3 +168,37 @@ def detalhe_equipamento(request, pk):
 @login_required
 def ler_qrcode(request):
     return render(request, 'estoque/qrcode_leitura.html')
+
+
+
+@login_required
+def estoque_resumido(request):
+    agrupados = (
+        Equipamento.objects
+        .values('equipamento')
+        .annotate(
+            total_quantidade=Sum('quantidade'),
+            ultimo_registro=Max('registro')  # CORRETO
+        )
+        .order_by('equipamento')
+    )
+
+    equipamentos = []
+    for item in agrupados:
+        registro = Equipamento.objects.filter(registro=item['ultimo_registro']).first()
+        equipamentos.append({
+            'equipamento': item['equipamento'],
+            'total_quantidade': item['total_quantidade'],
+            'foto': registro.foto.url if registro and registro.foto else None
+        })
+
+    return render(request, 'estoque/estoque_resumido.html', {
+        'equipamentos': equipamentos
+    })
+    
+    
+def autocomplete_equipamento(request):
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        term = request.GET.get('term', '').upper()
+        equipamentos = Equipamento.objects.filter(equipamento__icontains=term).values_list('equipamento', flat=True).distinct()
+        return JsonResponse(list(equipamentos), safe=False)

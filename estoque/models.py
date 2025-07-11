@@ -8,6 +8,7 @@ from django.core.files import File
 from django.db import models
 from django.utils.timezone import now
 from django.urls import reverse
+import qrcode
 
 class Colaborador(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -60,14 +61,15 @@ class Colaborador(models.Model):
 
 # Crienado modelo de registro de equipamentos junto com QR Code
 
-import qrcode
-def caminho_foto(instance, filename):
-    return f'equipamentos/fotos/{instance.registro}_{filename}'
 
+def caminho_foto(instance, filename):
+    return f'equipamentos/fotos/{filename}'
 
 def caminho_qrcode(instance, filename):
-    return f'equipamentos/qrcodes/{instance.registro}_qrcode.png'
+    return f'equipamentos/qrcodes/{filename}'
 
+def caminho_anexo(instance, filename):
+    return f'equipamentos/anexos/{filename}'
 
 class Equipamento(models.Model):
     registro = models.AutoField(primary_key=True)  # número único automático
@@ -75,7 +77,7 @@ class Equipamento(models.Model):
     identificador = models.CharField(max_length=50)
     caracteristica = models.TextField(blank=True, null=True)
     descricao_uso = models.TextField(blank=True, null=True)
-    
+
     TIPO_CHOICES = [
         ('ELETRICO', 'Elétrico'),
         ('MANUAL', 'Manual'),
@@ -84,11 +86,19 @@ class Equipamento(models.Model):
         ('OUTRO', 'Outro'),
     ]
     tipo_equipamento = models.CharField(max_length=20, choices=TIPO_CHOICES)
-    
+
     quantidade = models.PositiveIntegerField(default=1)
     localizacao = models.CharField(max_length=100)
     foto = models.ImageField(upload_to=caminho_foto, null=True, blank=True)
     qrcode = models.ImageField(upload_to=caminho_qrcode, blank=True)
+
+    # Campos de certificação
+    data_certificacao = models.DateField(null=True, blank=True)
+    data_vencimento = models.DateField(null=True, blank=True)
+    empresa_certificacao = models.CharField(max_length=100, blank=True)
+    codigo_certificado = models.CharField(max_length=50, blank=True)
+    detalhes_certificacao = models.TextField(blank=True, null=True)
+    anexo_certificacao = models.FileField(upload_to=caminho_anexo, null=True, blank=True)
 
     data_cadastro = models.DateTimeField(default=now)
 
@@ -99,16 +109,13 @@ class Equipamento(models.Model):
         return reverse('detalhe_equipamento', args=[str(self.pk)])
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)  # salva primeiro para garantir que tem um registro
-        
-        # Gera o QR Code com a URL do detalhe
-        qr_data = f"{self.get_absolute_url()}"  # ou uma URL externa com domínio se necessário
+        super().save(*args, **kwargs)
+
+        qr_data = f"{self.get_absolute_url()}"
         qr = qrcode.make(qr_data)
         buffer = BytesIO()
         qr.save(buffer, format='PNG')
         file_name = f'qrcode_{self.registro}.png'
         self.qrcode.save(file_name, File(buffer), save=False)
 
-        # Salva novamente com o QR Code
         super().save(*args, **kwargs)
-    
