@@ -3,13 +3,14 @@ from django.contrib.auth.decorators import login_required
 
 from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect
-from .forms import ColaboradorForm
+from .forms import ColaboradorForm, EquipamentoForm
 from django.contrib.auth.models import User
 from django.contrib import messages
 import re
-from .models import Colaborador
+from .models import Colaborador, Equipamento
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Q
 
 
 
@@ -114,3 +115,54 @@ def excluir_colaborador(request, pk):
     return render(request, 'estoque/excluir_colaborador.html', {
         'colaborador': colaborador
     })
+    
+@login_required
+def cadastrar_equipamento(request):
+    if request.method == 'POST':
+        form = EquipamentoForm(request.POST, request.FILES)
+        if form.is_valid():
+            equipamento = form.save()
+            messages.success(request, 'Equipamento cadastrado com sucesso!')
+            return render(request, 'estoque/equipamento_cadastro.html', {
+                'form': EquipamentoForm(),
+                'qr_code': equipamento.qrcode.url,
+                'exibir_modal': True
+            })
+    else:
+        form = EquipamentoForm()
+
+    return render(request, 'estoque/equipamento_cadastro.html', {'form': form})
+
+
+@login_required
+def listar_equipamentos(request):
+    busca = request.GET.get('q', '')
+    equipamentos = Equipamento.objects.all()
+
+    if busca:
+        equipamentos = equipamentos.filter(
+            Q(equipamento__icontains=busca) |
+            Q(identificador__icontains=busca) |
+            Q(registro__icontains=busca)
+        )
+
+    return render(request, 'estoque/equipamento_lista.html', {
+        'equipamentos': equipamentos,
+        'busca': busca
+    })
+
+    
+    
+       
+@login_required
+def detalhe_equipamento(request, pk):
+    equipamento = get_object_or_404(Equipamento, pk=pk)
+    return render(request, 'estoque/equipamento_detalhe.html', {
+        'equipamento': equipamento
+    })
+    
+    
+    
+@login_required
+def ler_qrcode(request):
+    return render(request, 'estoque/qrcode_leitura.html')

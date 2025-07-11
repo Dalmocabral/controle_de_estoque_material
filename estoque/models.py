@@ -2,6 +2,12 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from django.utils import timezone
+import qrcode
+from io import BytesIO
+from django.core.files import File
+from django.db import models
+from django.utils.timezone import now
+from django.urls import reverse
 
 class Colaborador(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -48,3 +54,61 @@ class Colaborador(models.Model):
     
     def __str__(self):
         return f"{self.nome} ({self.matricula})"
+    
+    
+
+
+# Crienado modelo de registro de equipamentos junto com QR Code
+
+import qrcode
+def caminho_foto(instance, filename):
+    return f'equipamentos/fotos/{instance.registro}_{filename}'
+
+
+def caminho_qrcode(instance, filename):
+    return f'equipamentos/qrcodes/{instance.registro}_qrcode.png'
+
+
+class Equipamento(models.Model):
+    registro = models.AutoField(primary_key=True)  # número único automático
+    equipamento = models.CharField(max_length=100)
+    identificador = models.CharField(max_length=50)
+    caracteristica = models.TextField(blank=True, null=True)
+    descricao_uso = models.TextField(blank=True, null=True)
+    
+    TIPO_CHOICES = [
+        ('ELETRICO', 'Elétrico'),
+        ('MANUAL', 'Manual'),
+        ('HIDRAULICO', 'Hidráulico'),
+        ('PNEUMATICO', 'Pneumático'),
+        ('OUTRO', 'Outro'),
+    ]
+    tipo_equipamento = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    
+    quantidade = models.PositiveIntegerField(default=1)
+    localizacao = models.CharField(max_length=100)
+    foto = models.ImageField(upload_to=caminho_foto, null=True, blank=True)
+    qrcode = models.ImageField(upload_to=caminho_qrcode, blank=True)
+
+    data_cadastro = models.DateTimeField(default=now)
+
+    def __str__(self):
+        return f"{self.equipamento} ({self.identificador})"
+
+    def get_absolute_url(self):
+        return reverse('detalhe_equipamento', args=[str(self.pk)])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # salva primeiro para garantir que tem um registro
+        
+        # Gera o QR Code com a URL do detalhe
+        qr_data = f"{self.get_absolute_url()}"  # ou uma URL externa com domínio se necessário
+        qr = qrcode.make(qr_data)
+        buffer = BytesIO()
+        qr.save(buffer, format='PNG')
+        file_name = f'qrcode_{self.registro}.png'
+        self.qrcode.save(file_name, File(buffer), save=False)
+
+        # Salva novamente com o QR Code
+        super().save(*args, **kwargs)
+    

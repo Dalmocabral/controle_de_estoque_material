@@ -13,4 +13,9 @@ urlpatterns = [
     
     path('dashboard/colaboradores/editar/<int:pk>/', views.editar_colaborador, name='editar_colaborador'),
     path('dashboard/colaboradores/excluir/<int:pk>/', views.excluir_colaborador, name='excluir_colaborador'),
+    
+    path('dashboard/equipamentos/detalhe_equipamento/<int:pk>/', views.detalhe_equipamento, name='detalhe_equipamento'),
+    path('dashboard/equipamentos/cadastrar/', views.cadastrar_equipamento, name='cadastrar_equipamento'),
+    path('dashboard/equipamentos/listar_equipamentos', views.listar_equipamentos, name='listar_equipamentos'),
+    path('qrcode/ler/', views.ler_qrcode, name='ler_qrcode'),
 ]

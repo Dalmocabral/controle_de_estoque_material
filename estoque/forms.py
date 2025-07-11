@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Colaborador
+from .models import Colaborador, Equipamento
 from django.core.validators import validate_email
 import re
 
@@ -68,3 +68,22 @@ class ColaboradorForm(forms.ModelForm):
             raise forms.ValidationError("Esta matrícula já está cadastrada.")
 
         return matricula
+    
+    
+class EquipamentoForm(forms.ModelForm):
+    class Meta:
+        model = Equipamento
+        fields = [
+                'equipamento', 'identificador', 'caracteristica', 'descricao_uso',
+                'tipo_equipamento', 'quantidade', 'localizacao', 'foto'
+            ]
+        widgets = {
+                'equipamento': forms.TextInput(attrs={'class': 'form-control'}),
+                'identificador': forms.TextInput(attrs={'class': 'form-control'}),
+                'caracteristica': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+                'descricao_uso': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+                'tipo_equipamento': forms.Select(attrs={'class': 'form-select'}),
+                'quantidade': forms.NumberInput(attrs={'class': 'form-control'}),
+                'localizacao': forms.TextInput(attrs={'class': 'form-control'}),
+                'foto': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            }
