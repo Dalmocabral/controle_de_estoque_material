@@ -1,0 +1,14 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Editar Colaborador{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4>Editar Colaborador</h4>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Salvar Alterações</button>
+    <a href="{% url 'listar_colaboradores' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}
