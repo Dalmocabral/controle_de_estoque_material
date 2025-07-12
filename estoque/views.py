@@ -1,36 +1,56 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+"""
+Views para sistema de estoque com autenticação e CRUD para colaboradores e equipamentos.
+Organizado seguindo boas práticas Pythonicas com imports agrupados e comentários descritivos.
+"""
 
-from django.contrib.auth.views import LoginView
-from django.shortcuts import redirect
-from .forms import *
-from django.contrib.auth.models import User
-from django.contrib import messages
-import re
-from .models import Colaborador, Equipamento
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from django.db.models import Q
-from django.db.models import Sum, Max
-from django.http import JsonResponse
+# Standard Library
 import json
+import re
 
+# Django
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib.auth.views import LoginView
+from django.db.models import Q, Sum, Max
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+# Local Apps
+from .forms import ColaboradorForm, EquipamentoForm
+from .models import Certificacao, Colaborador, Equipamento
 
 
 class CustomLoginView(LoginView):
+    """View personalizada para login que redireciona usuários autenticados"""
+    
     template_name = 'estoque/home.html'
     
     def dispatch(self, request, *args, **kwargs):
+        """Redireciona usuários já autenticados para o dashboard"""
         if request.user.is_authenticated:
             return redirect('dashboard')
         return super().dispatch(request, *args, **kwargs)
 
+
 @login_required
 def dashboard(request):
+    """Página inicial após login"""
     return render(request, 'estoque/dashboard.html')
 
 
+# ==============================================
+# VIEWS PARA GESTÃO DE COLABORADORES
+# ==============================================
+
+@login_required
 def cadastrar_colaborador(request):
+    """
+    Cadastra novo colaborador e cria usuário associado.
+    Requer permissões de superusuário ou 'estoque.add_colaborador'.
+    """
+    # Verificação de permissões
     if not request.user.is_superuser and not request.user.has_perm('estoque.add_colaborador'):
         messages.error(request, 'Você não tem permissão para acessar esta página.')
         return redirect('dashboard')
@@ -42,11 +62,11 @@ def cadastrar_colaborador(request):
                 colaborador = form.save(commit=False)
                 nomes = colaborador.nome.strip().split()
                 
-                # Extrai os 6 primeiros dígitos do CPF para senha
+                # Gera senha a partir dos 6 primeiros dígitos do CPF
                 cpf_numeros = re.sub(r'[^0-9]', '', colaborador.cpf)
                 senha = cpf_numeros[:6]
                 
-                # Criar usuário associado
+                # Cria usuário Django associado
                 user = User.objects.create_user(
                     username=colaborador.matricula,
                     email=colaborador.email,
@@ -55,8 +75,9 @@ def cadastrar_colaborador(request):
                     password=senha
                 )
                 
+                # Completa e salva o colaborador
                 colaborador.user = user
-                colaborador.data_criacao = timezone.now()  # Garante a data correta
+                colaborador.data_criacao = timezone.now()
                 colaborador.save()
                 
                 messages.success(request, 'Colaborador cadastrado com sucesso!')
@@ -70,29 +91,32 @@ def cadastrar_colaborador(request):
     return render(request, 'estoque/cadastro_colaborador.html', {
         'colaborador_form': form
     })
-    
-    
+
+
 @login_required
 def listar_colaboradores(request):
+    """Lista todos os colaboradores cadastrados"""
     colaboradores = Colaborador.objects.all()
     return render(request, 'estoque/colaboradores.html', {
         'colaboradores': colaboradores
     })
-    
-    
-    
+
+
 @login_required
 def editar_colaborador(request, pk):
+    """Edita informações de um colaborador existente"""
     colaborador = get_object_or_404(Colaborador, pk=pk)
 
     if request.method == 'POST':
         form = ColaboradorForm(request.POST, instance=colaborador)
         if form.is_valid():
             colaborador = form.save()
+            # Atualiza dados do usuário associado
             colaborador.user.email = colaborador.email
             colaborador.user.first_name = colaborador.nome.split()[0]
             colaborador.user.last_name = ' '.join(colaborador.nome.split()[1:])
             colaborador.user.save()
+            
             messages.success(request, 'Colaborador atualizado com sucesso!')
             return redirect('listar_colaboradores')
     else:
@@ -102,15 +126,16 @@ def editar_colaborador(request, pk):
         'form': form,
         'colaborador': colaborador
     })
-    
-    
+
+
 @login_required
 def excluir_colaborador(request, pk):
+    """Remove colaborador e usuário associado"""
     colaborador = get_object_or_404(Colaborador, pk=pk)
 
     if request.method == 'POST':
         if colaborador.user:
-            colaborador.user.delete()  # Apaga o User vinculado
+            colaborador.user.delete()  # Remove usuário vinculado
         colaborador.delete()
         messages.success(request, 'Colaborador excluído com sucesso!')
         return redirect('listar_colaboradores')
@@ -118,21 +143,23 @@ def excluir_colaborador(request, pk):
     return render(request, 'estoque/excluir_colaborador.html', {
         'colaborador': colaborador
     })
-    
+
+
+# ==============================================
+# VIEWS PARA GESTÃO DE EQUIPAMENTOS
+# ==============================================
+
 @login_required
 def cadastrar_equipamento(request):
+    """Cadastra novo equipamento com certificados associados"""
     if request.method == 'POST':
         form = EquipamentoForm(request.POST, request.FILES)
         
         if form.is_valid():
             equipamento = form.save()
-
             certificados_data = json.loads(request.POST.get('certificados_json', '[]'))
             
-            # Mapear arquivos enviados para os certificados correspondentes
-            # A chave do arquivo no request.FILES deve corresponder ao índice do certificado
-            # no array 'certificados_json' enviado pelo frontend.
-            # Ex: 'anexo_0', 'anexo_1', etc.
+            # Processa cada certificado enviado
             for idx, cert_data in enumerate(certificados_data):
                 anexo_file = request.FILES.get(f'anexo_{idx}')
                 
@@ -144,7 +171,7 @@ def cadastrar_equipamento(request):
                     data_vencimento=cert_data.get('vencimento') or None,
                     codigo_certificado=cert_data.get('codigo'),
                     detalhes=cert_data.get('detalhes'),
-                    anexo=anexo_file # anexo_file será None se não houver arquivo para este certificado
+                    anexo=anexo_file  # Pode ser None se não houver arquivo
                 )
 
             messages.success(request, 'Equipamento cadastrado com sucesso!')
@@ -154,9 +181,7 @@ def cadastrar_equipamento(request):
                 'exibir_modal': True
             })
         else:
-            # Se o formulário principal não for válido, renderize com erros
             return render(request, 'estoque/equipamento_cadastro.html', {'form': form})
-
     else:
         form = EquipamentoForm()
 
@@ -165,6 +190,7 @@ def cadastrar_equipamento(request):
 
 @login_required
 def listar_equipamentos(request):
+    """Lista equipamentos com possibilidade de busca"""
     busca = request.GET.get('q', '')
     equipamentos = Equipamento.objects.all()
 
@@ -180,32 +206,31 @@ def listar_equipamentos(request):
         'busca': busca
     })
 
-    
-    
-       
+
 @login_required
 def detalhe_equipamento(request, pk):
+    """Exibe detalhes de um equipamento específico"""
     equipamento = get_object_or_404(Equipamento, pk=pk)
     return render(request, 'estoque/equipamento_detalhe.html', {
         'equipamento': equipamento
     })
-    
-    
-    
+
+
 @login_required
 def ler_qrcode(request):
+    """Página para leitura de QRCode"""
     return render(request, 'estoque/qrcode_leitura.html')
-
 
 
 @login_required
 def estoque_resumido(request):
+    """Exibe resumo do estoque agrupado por tipo de equipamento"""
     agrupados = (
         Equipamento.objects
         .values('equipamento')
         .annotate(
             total_quantidade=Sum('quantidade'),
-            ultimo_registro=Max('registro')  # CORRETO
+            ultimo_registro=Max('registro')
         )
         .order_by('equipamento')
     )
@@ -222,11 +247,13 @@ def estoque_resumido(request):
     return render(request, 'estoque/estoque_resumido.html', {
         'equipamentos': equipamentos
     })
-    
-    
+
+
 def autocomplete_equipamento(request):
+    """Endpoint AJAX para autocompletar nomes de equipamentos"""
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         term = request.GET.get('term', '').upper()
-        equipamentos = Equipamento.objects.filter(equipamento__icontains=term).values_list('equipamento', flat=True).distinct()
+        equipamentos = Equipamento.objects.filter(
+            equipamento__icontains=term
+        ).values_list('equipamento', flat=True).distinct()
         return JsonResponse(list(equipamentos), safe=False)
-    
