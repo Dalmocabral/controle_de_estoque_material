@@ -119,3 +119,12 @@ class Equipamento(models.Model):
         self.qrcode.save(file_name, File(buffer), save=False)
 
         super().save(*args, **kwargs)
+
+
+class AnexoCertificacao(models.Model):
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='anexos')
+    arquivo = models.FileField(upload_to='certificacoes/')
+    descricao = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.arquivo.name

@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from .models import Colaborador, Equipamento
 from django.core.validators import validate_email
 import re
+from .models import AnexoCertificacao
 
 class ColaboradorForm(forms.ModelForm):
     class Meta:
@@ -95,6 +96,24 @@ class EquipamentoForm(forms.ModelForm):
             'detalhes_certificacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'anexo_certificacao': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
+        
+        labels = {
+            'equipamento': 'Nome do Equipamento:',
+            'identificador': 'ID Único:',
+            'caracteristica': 'Características Técnicas:',
+            'descricao_uso': 'Descrição de Uso:',
+            'tipo_equipamento': 'Tipo:',
+            'quantidade': 'Quantidade em Estoque:',
+            'localizacao': 'Local de Armazenamento:',
+            'foto': 'Foto do Equipamento:',
+            'data_certificacao': 'Data da Certificação:',
+            'data_vencimento': 'Vencimento da Certificação:',
+            'empresa_certificacao': 'Empresa Certificadora:',
+            'codigo_certificado': 'Código do Certificado:',
+            'anexo_certificacao': 'Detalhes Adicionais da Certificação:',
+            # Se você ainda tivesse 'anexo_certificacao' aqui, poderia mudar seu label também
+            # 'anexo_certificacao': 'Anexo de Certificação:',
+        }
 
     def clean_equipamento(self):
         return self.cleaned_data['equipamento'].upper()
@@ -104,3 +123,14 @@ class EquipamentoForm(forms.ModelForm):
 
     def clean_empresa_certificacao(self):
         return self.cleaned_data['empresa_certificacao'].upper()
+
+
+
+class AnexoCertificacaoForm(forms.ModelForm):
+    class Meta:
+        model = AnexoCertificacao
+        fields = ['arquivo', 'descricao']
+        widgets = {
+            'arquivo': forms.ClearableFileInput(attrs={'class': 'form-control'}),  # apenas 1 arquivo
+            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição (opcional)'}),
+        }
