@@ -1,9 +1,10 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Colaborador, Equipamento
+from .models import Colaborador, Equipamento, Certificacao
+from django.forms import inlineformset_factory
 from django.core.validators import validate_email
 import re
-from .models import AnexoCertificacao
+
 
 class ColaboradorForm(forms.ModelForm):
     class Meta:
@@ -77,8 +78,6 @@ class EquipamentoForm(forms.ModelForm):
         fields = [
             'equipamento', 'identificador', 'caracteristica', 'descricao_uso',
             'tipo_equipamento', 'quantidade', 'localizacao', 'foto',
-            'data_certificacao', 'data_vencimento', 'empresa_certificacao',
-            'codigo_certificado', 'detalhes_certificacao', 'anexo_certificacao'
         ]
         widgets = {
             'equipamento': forms.TextInput(attrs={'class': 'form-control'}),
@@ -89,30 +88,6 @@ class EquipamentoForm(forms.ModelForm):
             'quantidade': forms.NumberInput(attrs={'class': 'form-control'}),
             'localizacao': forms.TextInput(attrs={'class': 'form-control'}),
             'foto': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'data_certificacao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'data_vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'empresa_certificacao': forms.TextInput(attrs={'class': 'form-control'}),
-            'codigo_certificado': forms.TextInput(attrs={'class': 'form-control'}),
-            'detalhes_certificacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'anexo_certificacao': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        }
-        
-        labels = {
-            'equipamento': 'Nome do Equipamento:',
-            'identificador': 'ID Único:',
-            'caracteristica': 'Características Técnicas:',
-            'descricao_uso': 'Descrição de Uso:',
-            'tipo_equipamento': 'Tipo:',
-            'quantidade': 'Quantidade em Estoque:',
-            'localizacao': 'Local de Armazenamento:',
-            'foto': 'Foto do Equipamento:',
-            'data_certificacao': 'Data da Certificação:',
-            'data_vencimento': 'Vencimento da Certificação:',
-            'empresa_certificacao': 'Empresa Certificadora:',
-            'codigo_certificado': 'Código do Certificado:',
-            'anexo_certificacao': 'Detalhes Adicionais da Certificação:',
-            # Se você ainda tivesse 'anexo_certificacao' aqui, poderia mudar seu label também
-            # 'anexo_certificacao': 'Anexo de Certificação:',
         }
 
     def clean_equipamento(self):
@@ -121,16 +96,27 @@ class EquipamentoForm(forms.ModelForm):
     def clean_localizacao(self):
         return self.cleaned_data['localizacao'].upper()
 
-    def clean_empresa_certificacao(self):
-        return self.cleaned_data['empresa_certificacao'].upper()
-
-
-
-class AnexoCertificacaoForm(forms.ModelForm):
+class CertificacaoForm(forms.ModelForm):
     class Meta:
-        model = AnexoCertificacao
-        fields = ['arquivo', 'descricao']
+        model = Certificacao
+        fields = [
+            'nome_certificado', 'data_certificacao', 'data_vencimento',
+            'empresa_certificadora', 'codigo_certificado', 'detalhes', 'anexo',
+        ]
         widgets = {
-            'arquivo': forms.ClearableFileInput(attrs={'class': 'form-control'}),  # apenas 1 arquivo
-            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição (opcional)'}),
+            'nome_certificado': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_certificacao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'empresa_certificadora': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_certificado': forms.TextInput(attrs={'class': 'form-control'}),
+            'detalhes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'anexo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
+
+CertificacaoFormSet = inlineformset_factory(
+    Equipamento,
+    Certificacao,
+    form=CertificacaoForm,
+    extra=1,  # número de formulários extras a exibir
+    can_delete=True
+)

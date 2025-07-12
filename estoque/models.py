@@ -91,15 +91,6 @@ class Equipamento(models.Model):
     localizacao = models.CharField(max_length=100)
     foto = models.ImageField(upload_to=caminho_foto, null=True, blank=True)
     qrcode = models.ImageField(upload_to=caminho_qrcode, blank=True)
-
-    # Campos de certificação
-    data_certificacao = models.DateField(null=True, blank=True)
-    data_vencimento = models.DateField(null=True, blank=True)
-    empresa_certificacao = models.CharField(max_length=100, blank=True)
-    codigo_certificado = models.CharField(max_length=50, blank=True)
-    detalhes_certificacao = models.TextField(blank=True, null=True)
-    anexo_certificacao = models.FileField(upload_to=caminho_anexo, null=True, blank=True)
-
     data_cadastro = models.DateTimeField(default=now)
 
     def __str__(self):
@@ -120,11 +111,18 @@ class Equipamento(models.Model):
 
         super().save(*args, **kwargs)
 
-
-class AnexoCertificacao(models.Model):
-    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='anexos')
-    arquivo = models.FileField(upload_to='certificacoes/')
-    descricao = models.CharField(max_length=255, blank=True)
+class Certificacao(models.Model):
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='certificacoes')
+    nome_certificado = models.CharField(max_length=100)  # Ex: ISO 9001
+    data_certificacao = models.DateField()
+    data_vencimento = models.DateField(null=True, blank=True)
+    empresa_certificadora = models.CharField(max_length=100)
+    codigo_certificado = models.CharField(max_length=50)
+    detalhes = models.TextField(blank=True, null=True)
+    anexo = models.FileField(upload_to='certificacoes/', null=True, blank=True)
 
     def __str__(self):
-        return self.arquivo.name
+        return f"{self.nome_certificado} - {self.equipamento}"
+    
+    
+  

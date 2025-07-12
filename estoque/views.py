@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 
 from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect
-from .forms import ColaboradorForm, EquipamentoForm
+from .forms import *
 from django.contrib.auth.models import User
 from django.contrib import messages
 import re
@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.db.models import Sum, Max
 from django.http import JsonResponse
+import json
 
 
 
@@ -122,14 +123,40 @@ def excluir_colaborador(request, pk):
 def cadastrar_equipamento(request):
     if request.method == 'POST':
         form = EquipamentoForm(request.POST, request.FILES)
+        
         if form.is_valid():
             equipamento = form.save()
+
+            certificados_data = json.loads(request.POST.get('certificados_json', '[]'))
+            
+            # Mapear arquivos enviados para os certificados correspondentes
+            # A chave do arquivo no request.FILES deve corresponder ao índice do certificado
+            # no array 'certificados_json' enviado pelo frontend.
+            # Ex: 'anexo_0', 'anexo_1', etc.
+            for idx, cert_data in enumerate(certificados_data):
+                anexo_file = request.FILES.get(f'anexo_{idx}')
+                
+                Certificacao.objects.create(
+                    equipamento=equipamento,
+                    nome_certificado=cert_data.get('nome'),
+                    empresa_certificadora=cert_data.get('empresa'),
+                    data_certificacao=cert_data.get('data') or None,
+                    data_vencimento=cert_data.get('vencimento') or None,
+                    codigo_certificado=cert_data.get('codigo'),
+                    detalhes=cert_data.get('detalhes'),
+                    anexo=anexo_file # anexo_file será None se não houver arquivo para este certificado
+                )
+
             messages.success(request, 'Equipamento cadastrado com sucesso!')
             return render(request, 'estoque/equipamento_cadastro.html', {
                 'form': EquipamentoForm(),
                 'qr_code': equipamento.qrcode.url,
                 'exibir_modal': True
             })
+        else:
+            # Se o formulário principal não for válido, renderize com erros
+            return render(request, 'estoque/equipamento_cadastro.html', {'form': form})
+
     else:
         form = EquipamentoForm()
 
@@ -202,3 +229,4 @@ def autocomplete_equipamento(request):
         term = request.GET.get('term', '').upper()
         equipamentos = Equipamento.objects.filter(equipamento__icontains=term).values_list('equipamento', flat=True).distinct()
         return JsonResponse(list(equipamentos), safe=False)
+    
