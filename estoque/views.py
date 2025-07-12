@@ -221,12 +221,16 @@ def ler_qrcode(request):
     """Página para leitura de QRCode"""
     return render(request, 'estoque/qrcode_leitura.html')
 
+from django.db.models import Q
 
 @login_required
 def estoque_resumido(request):
-    """Exibe resumo do estoque agrupado por tipo de equipamento"""
+    """Exibe resumo do estoque agrupado por tipo de equipamento com filtro de busca"""
+    search = request.GET.get('search', '')
+
     agrupados = (
         Equipamento.objects
+        .filter(equipamento__icontains=search)  # Aplica filtro aqui
         .values('equipamento')
         .annotate(
             total_quantidade=Sum('quantidade'),
@@ -236,17 +240,30 @@ def estoque_resumido(request):
     )
 
     equipamentos = []
+    hoje = timezone.now().date()
+    
     for item in agrupados:
         registro = Equipamento.objects.filter(registro=item['ultimo_registro']).first()
-        equipamentos.append({
-            'equipamento': item['equipamento'],
-            'total_quantidade': item['total_quantidade'],
-            'foto': registro.foto.url if registro and registro.foto else None
-        })
+        
+        if registro:
+            certificacoes = registro.certificacoes.all()
+            total_valido = sum(1 for c in certificacoes if c.data_vencimento and c.data_vencimento >= hoje)
+            
+            equipamentos.append({
+                'equipamento': item['equipamento'],
+                'total_quantidade': item['total_quantidade'],
+                'foto': registro.foto.url if registro.foto else None,
+                'total_certificado': certificacoes.count(),
+                'total_valido': total_valido,
+                'total_vencido': certificacoes.count() - total_valido,
+                'registro': registro.registro
+            })
 
     return render(request, 'estoque/estoque_resumido.html', {
-        'equipamentos': equipamentos
+        'equipamentos': equipamentos,
+        'search': search  # Passa a variável para o template
     })
+
 
 
 def autocomplete_equipamento(request):
