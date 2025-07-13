@@ -1,0 +1,113 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Estoque Resumido{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-4">📦 Resumo de Estoque por Equipamento</h4>
+
+  <!-- 🔍 Barra de pesquisa -->
+  <form method="get" class="row mb-3">
+    <div class="col-md-6">
+      <input type="text" name="search" class="form-control" placeholder="Buscar por equipamento..." value="{{ search }}">
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-search"></i> Buscar
+      </button>
+    </div>
+    {% if search %}
+    <div class="col-md-2">
+      <a href="{% url 'estoque_resumido' %}" class="btn btn-outline-secondary w-100">
+        Limpar
+      </a>
+    </div>
+    {% endif %}
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle text-center shadow-sm rounded">
+      <thead class="table-light">
+        <tr>
+          <th>Imagem</th>
+          <th>Equipamento</th>
+          <th>Quantidade Total</th>
+          <th>Total Certificados</th>
+          <th>Sem Certificação</th>
+          <th>Válidos</th>
+          <th>Vencidos</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in equipamentos %}
+        <tr>
+          <td style="width: 100px;">
+            {% if item.foto %}
+              <img src="{{ item.foto }}" alt="Foto" class="img-thumbnail rounded" style="max-width: 80px;">
+            {% else %}
+              <span class="text-muted">Sem imagem</span>
+            {% endif %}
+          </td>
+          <td class="fw-semibold">{{ item.equipamento }}</td>
+          <td><strong>{{ item.total_quantidade }}</strong></td>
+          <td>{{ item.total_certificado }}</td>
+          <td>{{ item.total_sem_certificado }}</td>
+          <td>
+            <span class="badge bg-success px-3 py-2">{{ item.total_valido }}</span>
+          </td>
+          <td>
+            <span class="badge bg-danger px-3 py-2">{{ item.total_vencido }}</span>
+          </td>
+          
+          <td>
+            <a href="{% url 'estoque_detalhado' item.equipamento %}" class="btn btn-sm btn-outline-primary">
+  <i class="bi bi-search"></i> Detalhe
+</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">
+            Nenhum dado encontrado.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Paginação -->
+<nav aria-label="Paginação" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if equipamentos.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">&laquo;</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ equipamentos.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">Anterior</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+      <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+    {% endif %}
+
+    <li class="page-item active">
+      <span class="page-link">
+        Página {{ equipamentos.number }} de {{ equipamentos.paginator.num_pages }}
+      </span>
+    </li>
+
+    {% if equipamentos.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ equipamentos.next_page_number }}{% if search %}&search={{ search }}{% endif %}">Próxima</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ equipamentos.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">&raquo;</a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+      <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+    {% endif %}
+  </ul>
+</nav>
+</div>
+{% endblock %}

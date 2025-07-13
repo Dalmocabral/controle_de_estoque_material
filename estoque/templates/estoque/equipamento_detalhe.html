@@ -1,0 +1,106 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Equipamento #{{ equipamento.registro }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="bi bi-tools me-2"></i>{{ equipamento.equipamento }}</h5>
+      <small><strong>Registro:</strong> #{{ equipamento.registro }}</small>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-4">
+        <!-- Coluna da imagem -->
+        <div class="col-md-4 text-center">
+          {% if equipamento.foto %}
+            <img src="{{ equipamento.foto.url }}" class="img-fluid rounded border" alt="Foto do equipamento">
+          {% else %}
+            <div class="text-muted">Sem imagem</div>
+          {% endif %}
+        </div>
+
+        <!-- Coluna das informações -->
+        <div class="col-md-8">
+          <p><i class="bi bi-tag"></i> <strong>Identificador:</strong> {{ equipamento.identificador }}</p>
+          <p><i class="bi bi-collection"></i> <strong>Tipo:</strong> {{ equipamento.get_tipo_equipamento_display }}</p>
+          <p><i class="bi bi-123"></i> <strong>Quantidade:</strong> {{ equipamento.quantidade }}</p>
+          <p><i class="bi bi-geo-alt"></i> <strong>Localização:</strong> {{ equipamento.localizacao }}</p>
+          <p><i class="bi bi-info-circle"></i> <strong>Descrição de uso:</strong><br> {{ equipamento.descricao_uso }}</p>
+          <p><i class="bi bi-star"></i> <strong>Características:</strong><br> {{ equipamento.caracteristica }}</p>
+        </div>
+      </div>
+
+      {% if equipamento.qrcode %}
+      <div class="mt-4 border-top pt-3">
+        <h6><i class="bi bi-qr-code"></i> QR Code</h6>
+        <div class="d-flex align-items-center gap-4">
+          <img src="{{ equipamento.qrcode.url }}" width="140" class="border rounded">
+          <button class="btn btn-outline-primary" onclick="window.open('{{ equipamento.qrcode.url }}', '_blank')">
+            <i class="bi bi-printer"></i> Imprimir QR Code
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if equipamento.certificacoes.exists %}
+      <div class="mt-4 border-top pt-3">
+        <h6><i class="bi bi-award"></i> Certificações</h6>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle text-center">
+            <thead class="table-light">
+              <tr>
+                <th>Nome</th>
+                <th>Empresa</th>
+                <th>Data Certificação</th>
+                <th>Vencimento</th>
+                <th>Código</th>
+                <th>Anexo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cert in equipamento.certificacoes.all %}
+              <tr>
+                <td>{{ cert.nome_certificado }}</td>
+                <td>{{ cert.empresa_certificadora }}</td>
+                <td>{{ cert.data_certificacao|date:'d/m/Y' }}</td>
+                <td>
+  {% if cert.data_vencimento %}
+    {% if cert.data_vencimento < today %}
+      <span class="badge bg-danger">Vencido: {{ cert.data_vencimento|date:'d/m/Y' }}</span>
+    {% elif cert.data_vencimento <= today|add:"30" %}
+      <span class="badge bg-warning text-dark">Vence em breve: {{ cert.data_vencimento|date:'d/m/Y' }}</span>
+    {% else %}
+      <span class="badge bg-success">Válido: {{ cert.data_vencimento|date:'d/m/Y' }}</span>
+    {% endif %}
+  {% else %}
+    <span class="text-muted">Não informado</span>
+  {% endif %}
+</td>
+                <td>{{ cert.codigo_certificado }}</td>
+                <td>
+                  {% if cert.anexo %}
+                    <a href="{{ cert.anexo.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                      <i class="bi bi-file-earmark-pdf"></i> PDF
+                    </a>
+                  {% else %}
+                    <span class="text-muted">Sem anexo</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card-footer text-end">
+      <a href="{% url 'listar_equipamentos' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

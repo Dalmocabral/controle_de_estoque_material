@@ -1,0 +1,47 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Colaboradores{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Colaboradores</h4>
+    <a href="{% url 'cadastrar_colaborador' %}" class="btn btn-primary">+ Novo Colaborador</a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle table-bordered shadow-sm">
+      <thead class="table-light">
+        <tr>
+          <th>Nome</th>
+          <th>Matrícula</th>
+          <th>Função</th>
+          <th>Setor</th>
+          <th class="text-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for colaborador in colaboradores %}
+          <tr>
+            <td>{{ colaborador.nome }}</td>
+            <td>{{ colaborador.matricula }}</td>
+            <td>{{ colaborador.get_cargo_display }}</td>
+            <td>{{ colaborador.get_area_display }}</td>
+            <td class="text-center">
+              <a href="{% url 'editar_colaborador' colaborador.id %}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                <i class="bi bi-pencil-fill"></i> Editar
+              </a>
+              <a href="{% url 'excluir_colaborador' colaborador.id %}" class="btn btn-sm btn-outline-danger" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este colaborador?');">
+                <i class="bi bi-trash-fill"></i> Excluir
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center">Nenhum colaborador cadastrado.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

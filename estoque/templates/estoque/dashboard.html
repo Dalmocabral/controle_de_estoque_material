@@ -1,0 +1,120 @@
+{% extends "base/base_dashboard.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Welcome Message -->
+  <div class="text-center my-5 py-4">
+    <h2 class="text-primary">Bem-vindo, {{ user.first_name|default:user.username }}!</h2>
+    <p class="lead text-muted">Você está logado no sistema.</p>
+  </div>
+
+  <!-- Action Cards -->
+  <div class="row g-4">
+    <!-- Cadastrar Material -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 border-0 shadow-sm hover-effect">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle bg-primary text-white mb-3 mx-auto">
+            <i class="bi bi-plus-lg fs-3"></i>
+          </div>
+          <h5 class="card-title">Cadastrar Material</h5>
+          <p class="card-text text-muted">Adicione novos itens ao estoque</p>
+          <a href="{% url 'cadastrar_equipamento' %}" class="btn btn-primary stretched-link">Acessar</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pesquisar -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 border-0 shadow-sm hover-effect">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle bg-primary text-white mb-3 mx-auto">
+            <i class="bi bi-search fs-3"></i>
+          </div>
+          <h5 class="card-title">Pesquisar</h5>
+          <p class="card-text text-muted">Encontre itens no sistema</p>
+          <a href="{% url 'listar_equipamentos' %}" class="btn btn-primary stretched-link">Acessar</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agendamento -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 border-0 shadow-sm hover-effect">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle bg-primary text-white mb-3 mx-auto">
+            <i class="bi bi-calendar-event fs-3"></i>
+          </div>
+          <h5 class="card-title">Agendamento</h5>
+          <p class="card-text text-muted">Gerencie reservas e agendamentos</p>
+          <a href="#" class="btn btn-primary stretched-link">Acessar</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatório -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 border-0 shadow-sm hover-effect">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle bg-primary text-white mb-3 mx-auto">
+            <i class="bi bi-file-earmark-bar-graph fs-3"></i>
+          </div>
+          <h5 class="card-title">Relatório</h5>
+          <p class="card-text text-muted">Gere relatórios do sistema</p>
+          <a href="#" class="btn btn-primary stretched-link">Acessar</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ler QRCode -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 border-0 shadow-sm hover-effect">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle bg-primary text-white mb-3 mx-auto">
+            <i class="bi bi-qr-code-scan fs-3"></i>
+          </div>
+          <h5 class="card-title">Ler QRCode</h5>
+          <p class="card-text text-muted">Escanear códigos QR</p>
+          <a href="{% url 'ler_qrcode' %}" class="btn btn-primary stretched-link">Acessar</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configurações -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 border-0 shadow-sm hover-effect">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle bg-primary text-white mb-3 mx-auto">
+            <i class="bi bi-gear fs-3"></i>
+          </div>
+          <h5 class="card-title">Configurações</h5>
+          <p class="card-text text-muted">Ajustes do sistema</p>
+          <a href="#" class="btn btn-primary stretched-link">Acessar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Custom styles for dashboard */
+  .icon-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .hover-effect {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .hover-effect:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+  }
+</style>
+{% endblock %}
