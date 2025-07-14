@@ -1,0 +1,730 @@
+quando tento salva a edição do equipamento ele me tras esse msg
+
+Dados de ManagementForm estão faltando ou foram adulterados. Campos ausentes: certificacoes-TOTAL_FORMS, certificacoes-INITIAL_FORMS. Você pode precisar enviar um relatório de bug se o problema persistir. e tbm percebir que ele nao tras os dados da data de vencimento e  data de certificação tenho que colocar de novo
+
+poderia corrigir
+
+equipamento_editar.html
+
+{% extends 'base/base_dashboard.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Equipamento{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-4">Editar Equipamento: <span class="text-primary">#{{ equipamento.registro }}</span></h4>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+      <!-- Coluna da imagem -->
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-dark text-white">
+            <i class="bi bi-image"></i> Imagem do Equipamento
+          </div>
+          <div class="card-body text-center">
+            {% if equipamento.foto %}
+              <img src="{{ equipamento.foto.url }}" alt="Foto" class="img-fluid rounded border">
+            {% else %}
+              <p class="text-muted">Sem imagem</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna do formulário de dados -->
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <i class="bi bi-tools"></i> Dados do Equipamento
+          </div>
+          <div class="card-body">
+            {{ form.non_field_errors }}
+            <div class="row g-3">
+              {% for field in form %}
+              <div class="col-md-6">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field|add_class:"form-control" }}
+                {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formset de Certificações -->
+    <div class="card shadow-sm mt-4">
+      <div class="card-header bg-secondary text-white">
+        <i class="bi bi-award"></i> Certificações
+      </div>
+      <div class="card-body" id="formset-container">
+        {{ formset.non_form_errors }}
+        {{ formset.management_form }}
+        {% for form in formset.forms %}
+        <div class="border rounded p-3 mb-3">
+          <div class="row g-3">
+            {% for field in form.visible_fields %}
+            <div class="col-md-6">
+              <label class="form-label">{{ field.label }}</label>
+              {{ field|add_class:"form-control" }}
+              {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+              {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+            {% endfor %}
+            {% for hidden_field in form.hidden_fields %}
+              {{ hidden_field }}
+            {% endfor %}
+            {% if form.instance.pk %}
+            <div class="col-md-12">
+              <div class="form-check">
+                {{ form.DELETE }} <label class="form-check-label">Excluir esta certificação</label>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <button type="button" class="btn btn-outline-secondary" id="add-form">Adicionar Certificação</button>
+      </div>
+    </div>
+
+    <div class="text-end mt-4">
+      <a href="{% url 'listar_equipamentos' %}" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-success">Salvar Alterações</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const totalForms = document.getElementById('id_certificacao_set-TOTAL_FORMS');
+  const formContainer = document.getElementById('formset-container');
+  const addBtn = document.getElementById('add-form');
+
+  addBtn.addEventListener('click', () => {
+    const currentFormCount = parseInt(totalForms.value);
+    const emptyFormTemplate = document.getElementById('empty-form').innerHTML.replace(/__prefix__/g, currentFormCount);
+    const newForm = document.createElement('div');
+    newForm.innerHTML = emptyFormTemplate;
+    formContainer.appendChild(newForm.firstElementChild);
+    totalForms.value = currentFormCount + 1;
+  });
+</script>
+
+<!-- Template para novo formulário de certificação -->
+<div id="empty-form" class="d-none">
+  {{ formset.empty_form }}
+</div>
+{% endblock %}
+
+equipamento_cadastro.html
+
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Cadastrar Equipamento{% endblock %}
+
+{% block content %}
+<style>
+  /* Correções para problemas de modal - Bootstrap 5 */
+
+/* Garantir z-index correto para modais */
+.modal {
+  z-index: 1055 !important;
+}
+
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
+.modal-dialog {
+  z-index: 1060 !important;
+}
+
+/* Garantir que o conteúdo do modal seja clicável */
+.modal-content {
+  position: relative;
+  z-index: 1061 !important;
+  pointer-events: auto;
+}
+
+/* Prevenir conflitos com jQuery UI */
+.ui-autocomplete {
+  z-index: 1070 !important;
+}
+
+/* Garantir que o backdrop não interfira com cliques */
+.modal-backdrop.show {
+  opacity: 0.5;
+  pointer-events: auto;
+}
+
+/* Correção para elementos dentro do modal */
+.modal-body,
+.modal-header,
+.modal-footer {
+  position: relative;
+  z-index: 1062 !important;
+}
+
+/* Garantir que botões sejam clicáveis */
+.modal .btn {
+  position: relative;
+  z-index: 1063 !important;
+  pointer-events: auto;
+}
+
+/* Correção para inputs dentro do modal */
+.modal input,
+.modal textarea,
+.modal select {
+  position: relative;
+  z-index: 1063 !important;
+  pointer-events: auto;
+}
+
+/* Prevenir overflow issues */
+.modal-open {
+  overflow: hidden;
+}
+
+.modal-open .modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Garantir que o modal seja visível em dispositivos móveis */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+}
+
+/* Correção para animações do modal */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+  transform: none;
+}
+
+/* Garantir que elementos de formulário funcionem */
+.modal .form-control:focus {
+  z-index: 1064 !important;
+  position: relative;
+}
+
+/* Correção para dropdowns dentro do modal */
+.modal .dropdown-menu {
+  z-index: 1065 !important;
+}
+</style>
+<div class="container my-4">
+  <h4>Cadastrar Novo Equipamento</h4>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="mt-4" id="equipamentoForm">
+    {% csrf_token %}
+    
+    <div class="row">
+      <h5>Informações do Equipamento</h5>
+      {% for field in form.visible_fields %}
+        {% if forloop.counter <= 8 %}
+          <div class="mb-3 col-md-6">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.name == 'foto' %}
+              <div id="preview" class="mt-2"></div>
+            {% endif %}
+            {% if field.errors %}
+              <div class="text-danger small">{{ field.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <button type="button" class="btn btn-outline-primary mb-3" id="btnAbrirCertificado">
+      + Adicionar Certificado
+    </button>
+
+    <div class="mt-3">
+      <h6>Certificados adicionados:</h6>
+      <ul id="certificadosLista" class="list-group"></ul>
+    </div>
+
+    <br><br>
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<!-- MODAL de QR Code -->
+<div class="modal fade" id="qrcodeModal" tabindex="-1" aria-labelledby="qrcodeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Equipamento cadastrado com sucesso!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Deseja imprimir o QR Code?</p>
+        <img src="{{ qr_code }}" alt="QR Code" class="img-fluid" width="200">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE CERTIFICADO -->
+<div class="modal fade" id="certificadoModal" tabindex="-1" aria-labelledby="certificadoModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="certificadoModalLabel">Adicionar Certificado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6 mb-2">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-control" id="cert_nome" required>
+          </div>
+          <div class="col-md-6 mb-2">
+            <label class="form-label">Empresa Certificadora</label>
+            <input type="text" class="form-control" id="cert_empresa" required>
+          </div>
+          <div class="col-md-6 mb-2">
+            <label class="form-label">Data Certificação</label>
+            <input type="date" class="form-control" id="cert_data">
+          </div>
+          <div class="col-md-6 mb-2">
+            <label class="form-label">Data Vencimento</label>
+            <input type="date" class="form-control" id="cert_vencimento">
+          </div>
+          <div class="col-md-6 mb-2">
+            <label class="form-label">Código</label>
+            <input type="text" class="form-control" id="cert_codigo">
+          </div>
+          <div class="col-md-6 mb-2">
+            <label class="form-label">Anexo (PDF)</label>
+            <input type="file" class="form-control" id="cert_anexo" accept=".pdf">
+          </div>
+          <div class="col-12 mb-2">
+            <label class="form-label">Detalhes</label>
+            <textarea class="form-control" id="cert_detalhes" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnAddCertificado">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+<style>
+/* Correções para o modal */
+.modal {
+  z-index: 1055 !important;
+}
+
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
+.modal-dialog {
+  z-index: 1060 !important;
+}
+
+/* Garantir que o modal seja clicável */
+.modal-content {
+  position: relative;
+  z-index: 1061 !important;
+}
+
+/* Prevenir conflitos com jQuery UI */
+.ui-autocomplete {
+  z-index: 1070 !important;
+}
+</style>
+
+<script>
+  {% if exibir_modal %}
+    document.addEventListener('DOMContentLoaded', function() {
+      const myModal = new bootstrap.Modal(document.getElementById('qrcodeModal'));
+      myModal.show();
+    });
+  {% endif %}
+
+  // Preview da imagem
+  document.addEventListener('DOMContentLoaded', function() {
+    const input = document.querySelector('input[type="file"][name="foto"]');
+    const preview = document.getElementById('preview');
+
+    if (input) {
+      input.addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            preview.innerHTML = `<img src="${e.target.result}" class="img-thumbnail mt-2" width="200">`;
+          }
+          reader.readAsDataURL(this.files[0]);
+        } else {
+          preview.innerHTML = '';
+        }
+      });
+    }
+
+    // Inicializar modal de certificado
+    initializeCertificadoModal();
+  });
+
+  // Autocomplete
+  $(function() {
+    $("#id_equipamento").autocomplete({
+      source: "{% url 'autocomplete_equipamento' %}"
+    });
+  });
+
+  // Variável global para certificados
+  let certificados = [];
+  let certificadoModal;
+
+  // Função para inicializar o modal de certificado
+  function initializeCertificadoModal() {
+    const modalElement = document.getElementById('certificadoModal');
+    certificadoModal = new bootstrap.Modal(modalElement, {
+      backdrop: true,
+      keyboard: true,
+      focus: true
+    });
+
+    // Event listener para abrir o modal
+    const btnAbrirCertificado = document.getElementById('btnAbrirCertificado');
+    if (btnAbrirCertificado) {
+      btnAbrirCertificado.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Limpar campos antes de abrir
+        limparCamposCertificado();
+        
+        // Mostrar modal
+        certificadoModal.show();
+      });
+    }
+
+    // Event listener para adicionar certificado
+    const btnAddCertificado = document.getElementById('btnAddCertificado');
+    if (btnAddCertificado) {
+      btnAddCertificado.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        adicionarCertificado();
+      });
+    }
+
+    // Event listeners para eventos do modal
+    modalElement.addEventListener('shown.bs.modal', function () {
+      console.log('Modal de certificado aberto');
+      // Focar no primeiro campo
+      document.getElementById('cert_nome').focus();
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', function () {
+      console.log('Modal de certificado fechado');
+      limparCamposCertificado();
+    });
+  }
+
+  // Função para limpar campos do certificado
+  function limparCamposCertificado() {
+    document.getElementById('cert_nome').value = '';
+    document.getElementById('cert_empresa').value = '';
+    document.getElementById('cert_data').value = '';
+    document.getElementById('cert_vencimento').value = '';
+    document.getElementById('cert_codigo').value = '';
+    document.getElementById('cert_detalhes').value = '';
+    document.getElementById('cert_anexo').value = ''; // Limpa o input de arquivo
+  }
+
+  // Função para adicionar certificado
+  function adicionarCertificado() {
+    const nome = document.getElementById("cert_nome").value.trim();
+    const empresa = document.getElementById("cert_empresa").value.trim();
+    const data = document.getElementById("cert_data").value;
+    const vencimento = document.getElementById("cert_vencimento").value;
+    const codigo = document.getElementById("cert_codigo").value.trim();
+    const detalhes = document.getElementById("cert_detalhes").value.trim();
+    const anexo = document.getElementById("cert_anexo").files[0]; // Pega o objeto File
+
+    // Validação
+    if (!nome || !empresa) {
+      alert("Preencha pelo menos o nome e a empresa certificadora.");
+      return;
+    }
+
+    // Adicionar à lista
+    const certificado = { 
+      nome, 
+      empresa, 
+      data, 
+      vencimento, 
+      codigo, 
+      detalhes, 
+      anexo: anexo // Armazena o objeto File diretamente
+    };
+    
+    certificados.push(certificado);
+
+    // Atualizar lista visual
+    atualizarListaCertificados();
+
+    // Fechar modal
+    certificadoModal.hide();
+  }
+
+  // Função para atualizar a lista visual de certificados
+  function atualizarListaCertificados() {
+    const lista = document.getElementById("certificadosLista");
+    lista.innerHTML = '';
+
+    certificados.forEach((cert, index) => {
+      const item = document.createElement("li");
+      item.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+      
+      const info = document.createElement("div");
+      info.innerHTML = `
+        <strong>${cert.nome}</strong><br>
+        <small class="text-muted">${cert.empresa} ${cert.data ? '- ' + cert.data : ''} ${cert.anexo ? `(Anexo: ${cert.anexo.name})` : ''}</small>
+      `;
+      
+      const btnRemover = document.createElement("button");
+      btnRemover.classList.add("btn", "btn-sm", "btn-outline-danger");
+      btnRemover.textContent = "Remover";
+      btnRemover.addEventListener('click', function() {
+        removerCertificado(index);
+      });
+      
+      item.appendChild(info);
+      item.appendChild(btnRemover);
+      lista.appendChild(item);
+    });
+  }
+
+  // Função para remover certificado
+  function removerCertificado(index) {
+    if (confirm('Deseja remover este certificado?')) {
+      certificados.splice(index, 1);
+      atualizarListaCertificados();
+    }
+  }
+
+  // Intercepta o submit do formulário para enviar os certificados e arquivos
+  document.getElementById('equipamentoForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Previne o envio padrão do formulário
+
+    const formData = new FormData(this); // Cria um FormData com os dados do formulário principal
+
+    // Adiciona os dados dos certificados (sem os arquivos) como JSON
+    const certificadosParaEnviar = certificados.map(cert => {
+      const { anexo, ...rest } = cert; // Remove o objeto File
+      return rest;
+    });
+    formData.append('certificados_json', JSON.stringify(certificadosParaEnviar));
+
+    // Adiciona os arquivos de anexo individualmente
+    certificados.forEach((cert, index) => {
+      if (cert.anexo) {
+        formData.append(`anexo_${index}`, cert.anexo, cert.anexo.name);
+      }
+    });
+
+    // Envia o formulário via Fetch API
+    fetch(this.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    })
+    .then(response => response.text()) // Ou response.json() se o backend retornar JSON
+    .then(html => {
+      // Substitui o HTML da página atual pelo HTML recebido
+      document.open();
+      document.write(html);
+      document.close();
+
+      // Após o novo conteúdo ser carregado, verifica se o modal do QR Code deve ser exibido
+      // A maneira mais simples é verificar se o elemento do modal existe no novo HTML
+      // e se a variável `exibir_modal` foi passada (procurando por um script tag, por exemplo)
+      // Uma abordagem mais limpa seria o backend retornar um JSON com o status e os dados necessários.
+      // Mas, para manter a consistência com o código original, vamos re-executar a lógica de exibição do modal.
+      const qrcodeModalElement = document.getElementById('qrcodeModal');
+      if (qrcodeModalElement) {
+          const myModal = new bootstrap.Modal(qrcodeModalElement);
+          myModal.show();
+      }
+    })
+    .catch(error => {
+      console.error('Erro ao enviar formulário:', error);
+      alert('Ocorreu um erro ao cadastrar o equipamento. Por favor, tente novamente.');
+    });
+  });
+
+</script>
+{% endblock %}
+
+
+    
+class EquipamentoForm(forms.ModelForm):
+    class Meta:
+        model = Equipamento
+        fields = [
+            'equipamento', 'identificador', 'caracteristica', 'descricao_uso',
+            'tipo_equipamento', 'quantidade', 'localizacao', 'foto',
+        ]
+        widgets = {
+            'equipamento': forms.TextInput(attrs={'class': 'form-control'}),
+            'identificador': forms.TextInput(attrs={'class': 'form-control'}),
+            'caracteristica': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'descricao_uso': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'tipo_equipamento': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control'}),
+            'localizacao': forms.TextInput(attrs={'class': 'form-control'}),
+            'foto': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_equipamento(self):
+        return self.cleaned_data['equipamento'].upper()
+
+    def clean_localizacao(self):
+        return self.cleaned_data['localizacao'].upper()
+
+class CertificacaoForm(forms.ModelForm):
+    class Meta:
+        model = Certificacao
+        fields = [
+            'nome_certificado', 'data_certificacao', 'data_vencimento',
+            'empresa_certificadora', 'codigo_certificado', 'detalhes', 'anexo',
+        ]
+        widgets = {
+            'nome_certificado': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_certificacao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'empresa_certificadora': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_certificado': forms.TextInput(attrs={'class': 'form-control'}),
+            'detalhes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'anexo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+CertificacaoFormSet = inlineformset_factory(
+    Equipamento,
+    Certificacao,
+    form=CertificacaoForm,
+    extra=1,  # número de formulários extras a exibir
+    can_delete=True
+) 
+
+
+class Equipamento(models.Model):
+    registro = models.AutoField(primary_key=True)  # número único automático
+    equipamento = models.CharField(max_length=100)
+    identificador = models.CharField(max_length=50)
+    caracteristica = models.TextField(blank=True, null=True)
+    descricao_uso = models.TextField(blank=True, null=True)
+
+    TIPO_CHOICES = [
+        ('ELETRICO', 'Elétrico'),
+        ('MANUAL', 'Manual'),
+        ('HIDRAULICO', 'Hidráulico'),
+        ('PNEUMATICO', 'Pneumático'),
+        ('OUTRO', 'Outro'),
+    ]
+    tipo_equipamento = models.CharField(max_length=20, choices=TIPO_CHOICES)
+
+    quantidade = models.PositiveIntegerField(default=1)
+    localizacao = models.CharField(max_length=100)
+    foto = models.ImageField(upload_to=caminho_foto, null=True, blank=True)
+    qrcode = models.ImageField(upload_to=caminho_qrcode, blank=True)
+    data_cadastro = models.DateTimeField(default=now)
+
+    def __str__(self):
+        return f"{self.equipamento} ({self.identificador})"
+
+    def get_absolute_url(self):
+        return reverse('detalhe_equipamento', args=[str(self.pk)])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        qr_data = f"{self.get_absolute_url()}"
+        qr = qrcode.make(qr_data)
+        buffer = BytesIO()
+        qr.save(buffer, format='PNG')
+        file_name = f'qrcode_{self.registro}.png'
+        self.qrcode.save(file_name, File(buffer), save=False)
+
+        super().save(*args, **kwargs)
+
+class Certificacao(models.Model):
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='certificacoes')
+    nome_certificado = models.CharField(max_length=100)  # Ex: ISO 9001
+    data_certificacao = models.DateField()
+    data_vencimento = models.DateField(null=True, blank=True)
+    empresa_certificadora = models.CharField(max_length=100)
+    codigo_certificado = models.CharField(max_length=50)
+    detalhes = models.TextField(blank=True, null=True)
+    anexo = models.FileField(upload_to='certificacoes/', null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.nome_certificado} - {self.equipamento}" 
+
+
+
+@login_required
+def editar_equipamento(request, pk):
+    equipamento = get_object_or_404(Equipamento, pk=pk)
+
+    EquipamentoForm = modelform_factory(Equipamento, exclude=['qrcode'])
+    
+    if request.method == 'POST':
+        form = EquipamentoForm(request.POST, request.FILES, instance=equipamento)
+        formset = CertificacaoFormSet(request.POST, request.FILES, instance=equipamento)
+
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            return redirect('detalhe_equipamento', pk=equipamento.pk)
+    else:
+        form = EquipamentoForm(instance=equipamento)
+        formset = CertificacaoFormSet(instance=equipamento)
+
+    return render(request, 'estoque/equipamento_editar.html', {
+        'form': form,
+        'formset': formset,
+        'equipamento': equipamento
+    }) 

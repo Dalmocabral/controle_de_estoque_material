@@ -9,6 +9,8 @@ from django.db import models
 from django.utils.timezone import now
 from django.urls import reverse
 import qrcode
+import uuid
+import random
 
 class Colaborador(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -125,4 +127,51 @@ class Certificacao(models.Model):
         return f"{self.nome_certificado} - {self.equipamento}"
     
     
+
+
+
+class Agendamento(models.Model):
+    SETOR_CHOICES = [
+        ('OPERACOES', 'Operações'),
+        ('ARMAZEM', 'Armazém'),
+        ('MANUTENCAO', 'Manutenção'),
+        ('TERMINAL2', 'Terminal 2'),
+    ]
+    
+    numero_agendamento = models.CharField(max_length=10, unique=True, blank=True)
+    nome_solicitante = models.CharField(max_length=100)
+    matricula = models.CharField(max_length=50)
+    data_hora_agendamento = models.DateTimeField()
+    setor_solicitante = models.CharField(
+        max_length=100,
+        choices=SETOR_CHOICES,
+        default='OPERACOES'
+    )
+    local_uso = models.TextField()
+    tipo_operacao = models.TextField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    def gerar_numero_agendamento(self):
+        while True:
+            numero = str(random.randint(1, 99999)).zfill(5)  # Aumentei para 5 dígitos
+            if not Agendamento.objects.filter(numero_agendamento=numero).exists():
+                self.numero_agendamento = numero
+                break
+
+    def save(self, *args, **kwargs):
+        if not self.numero_agendamento:
+            self.gerar_numero_agendamento()
+        super().save(*args, **kwargs)
+        
+    def __str__(self):
+        return f"Agendamento {self.numero_agendamento} - {self.nome_solicitante}"
+
+
+class PecaAgendada(models.Model):
+    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='pecas_agendadas')
+    equipamento = models.ForeignKey('Equipamento', on_delete=models.PROTECT)
+
+    def __str__(self):
+        return f"{self.equipamento} no {self.agendamento}"
+
   

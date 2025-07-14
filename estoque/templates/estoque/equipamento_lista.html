@@ -52,9 +52,17 @@
               {% endif %}
             </td>
             <td>
-              <a href="{% url 'detalhe_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-eye"></i> Visualizar
-              </a>
+              <div class="btn-group" role="group">
+                <a href="{% url 'detalhe_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'editar_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-warning">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'excluir_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir este equipamento?');">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
             </td>
           </tr>
         {% empty %}

@@ -1,0 +1,13 @@
+{% extends 'base/base_dashboard.html' %}
+
+{% block title %}Agendamento Realizado{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+  <div class="alert alert-success">
+    <h4 class="alert-heading">Agendamento Realizado com Sucesso!</h4>
+    <p>Número do Agendamento: <strong>{{ numero_agendamento }}</strong></p>
+    <a href="{% url 'listar_equipamentos' %}" class="btn btn-primary mt-3">Voltar para Equipamentos</a>
+  </div>
+</div>
+{% endblock %}

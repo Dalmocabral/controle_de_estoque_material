@@ -21,5 +21,12 @@ urlpatterns = [
     path('dashboard/equipamentos/estoque/', views.estoque_resumido, name='estoque_resumido'),
     path('autocomplete/equipamento/', views.autocomplete_equipamento, name='autocomplete_equipamento'),
     path('dashboard/estoque/detalhado/<str:nome_equipamento>/', views.estoque_detalhado, name='estoque_detalhado'),
+    path('dashboard/equipamento/<int:pk>/editar/', views.editar_equipamento, name='editar_equipamento'),
+    path('dashboard/equipamento/<int:pk>/excluir/', views.excluir_equipamento, name='excluir_equipamento'),    
+    path('dashboard/equipamento/agendamento/', views.agendar_view, name='agendar_view'),
+    path('api/buscar-pecas/', views.buscar_pecas_com_certificado, name='buscar_pecas_com_certificado'),
+    path('dashboard/agendamento/sucesso/<str:numero>/', views.sucesso_agendamento, name='sucesso_agendamento'),
+    path('dashboard/agendamentos/lista_agendamento/', views.lista_agendamento_view, name='lista_agendamento'),
+
     
 ]

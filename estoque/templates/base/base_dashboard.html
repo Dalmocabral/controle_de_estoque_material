@@ -179,7 +179,25 @@
           <a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Tela Inicial</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#"><i class="bi bi-calendar-event"></i> Agendamento</a>
+          <a class="nav-link" data-bs-toggle="collapse" href="#agendamentoSubmenu" role="button" aria-expanded="false"
+            aria-controls="agendamentoSubmenu">
+            <i class="bi bi-calendar-event"></i> Agendamento
+            <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
+          </a>
+          <div class="collapse" id="agendamentoSubmenu">
+            <ul class="nav flex-column ps-4">
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'agendar_view' %}">
+                  <i class="bi bi-plus-circle"></i> Novo Agendamento
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'lista_agendamento' %}">
+                  <i class="bi bi-list-ul"></i> Lista de Agendamentos
+                </a>
+              </li>
+            </ul>
+          </div>
         </li>
         <li class="nav-item">
           <a class="nav-link" data-bs-toggle="collapse" href="#equipamentoSubmenu" role="button" aria-expanded="false"
@@ -200,15 +218,12 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link" href="{% url 'cadastrar_equipamento' %}">
                   <i class="bi bi-plus-circle"></i> Cadastrar Material
                 </a>
               </li>
             </ul>
-          </div>
-        <li class="nav-item">
-          <a class="nav-link" href="#"><i class="bi bi-award"></i> Certificações</a>
-        </li>
+          </div>        
         <li class="nav-item">
           <a class="nav-link" href="#"><i class="bi bi-box-seam"></i> Inventário</a>
         </li>

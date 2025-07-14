@@ -1,0 +1,275 @@
+{% extends 'base/base_dashboard.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Novo Agendamento{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-4">Novo Agendamento de Equipamento</h4>
+
+  <form id="form-agendamento" method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label>Nome do Solicitante</label>
+        {{ form.nome_solicitante|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label>Matrícula</label>
+        {{ form.matricula|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label>Data e Hora do Agendamento</label>
+        {{ form.data_hora_agendamento|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label>Setor do Solicitante</label>
+        {{ form.setor_solicitante|add_class:"form-control" }}
+      </div>
+      <div class="col-md-12">
+        <label>Local de Uso</label>
+        {{ form.local_uso|add_class:"form-control" }}
+      </div>
+      <div class="col-md-12">
+        <label>Tipo de Operação</label>
+        {{ form.tipo_operacao|add_class:"form-control" }}
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalPecas">
+        Adicionar Peças
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <h5>Peças Selecionadas:</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle text-center">
+          <thead class="table-light">
+            <tr>
+              <th>Imagem da peça</th>
+              <th>Nome da peça</th>
+              <th>Numeração</th>
+              <th>Validade</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pecas-selecionadas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <input type="hidden" name="pecas_ids" id="pecas-ids" />
+
+    <div class="mt-4 text-end">
+      <button type="submit" class="btn btn-success">Salvar Agendamento</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal de Busca -->
+<div class="modal fade" id="modalPecas" tabindex="-1" aria-labelledby="modalPecasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPecasLabel">Selecionar Peça</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="busca-peca" class="form-control mb-3" placeholder="Buscar por nome ou número de identificação">
+        <div id="resultado-busca"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal de Sucesso -->
+<div class="modal fade" id="modalSucesso" tabindex="-1" aria-labelledby="modalSucessoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalSucessoLabel">Agendamento Criado</h5>
+      </div>
+      <div class="modal-body text-center">
+        <p>Agendamento nº <strong id="numeroAgendamentoExibido"></strong> criado com sucesso!</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-success" id="confirmarSucesso">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const buscaInput = document.getElementById('busca-peca');
+  const resultadoBusca = document.getElementById('resultado-busca');
+  const tabelaSelecionadas = document.getElementById('pecas-selecionadas');
+  const pecasIdsSet = new Set();
+
+  // Função para buscar peças
+  buscaInput.addEventListener('input', async () => {
+    const termo = buscaInput.value.trim();
+    if (termo.length < 2) {
+      resultadoBusca.innerHTML = '';
+      return;
+    }
+    
+    try {
+      const resp = await fetch(`/api/buscar-pecas/?q=${encodeURIComponent(termo)}`);
+      
+      if (!resp.ok) {
+        throw new Error('Erro na busca');
+      }
+      
+      const { resultados } = await resp.json();
+
+      resultadoBusca.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle text-center">
+            <thead class="table-light">
+              <tr>
+                <th>Imagem</th>
+                <th>Nome</th>
+                <th>Numeração</th>
+                <th>Validade</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-pecas-body"></tbody>
+          </table>
+        </div>
+      `;
+
+      const tbody = document.getElementById('tabela-pecas-body');
+
+      if (resultados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">Nenhuma peça encontrada</td></tr>';
+        return;
+      }
+
+      resultados.forEach(peca => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><img src="${peca.foto_url || '{% static "img/default-equipment.png" %}'}" 
+                  width="40" height="40" class="rounded" alt="Peça"></td>
+          <td>${peca.nome}</td>
+          <td>${peca.identificador}</td>
+          <td>${peca.validade || 'N/A'}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" 
+                    onclick="adicionarPeca(${peca.id}, '${peca.nome.replace(/'/g, "\\'")}', 
+                    '${peca.identificador.replace(/'/g, "\\'")}', 
+                    '${(peca.validade || 'N/A').replace(/'/g, "\\'")}', 
+                    '${peca.foto_url || ''}')">
+              Adicionar
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    } catch (err) {
+      console.error('Erro na busca:', err);
+      resultadoBusca.innerHTML = '<div class="alert alert-danger">Erro ao buscar peças</div>';
+    }
+  });
+
+  // Função para adicionar peça
+  window.adicionarPeca = (id, nome, identificador, validade, foto) => {
+    if (pecasIdsSet.has(id)) {
+      return; // Já foi adicionada
+    }
+    
+    pecasIdsSet.add(id);
+
+    const row = document.createElement('tr');
+    row.setAttribute('data-peca-id', id);
+    row.innerHTML = `
+      <td><img src="${foto || '{% static "img/default-equipment.png" %}'}" 
+              width="40" height="40" class="rounded" alt="Peça"></td>
+      <td>${nome}</td>
+      <td>${identificador}</td>
+      <td>${validade}</td>
+      <td>
+        <button type="button" class="btn btn-sm btn-outline-danger" 
+                onclick="removerPeca(${id}, this)">
+          × Remover
+        </button>
+      </td>
+    `;
+    
+    tabelaSelecionadas.appendChild(row);
+    document.getElementById('pecas-ids').value = Array.from(pecasIdsSet).join(',');
+  };
+
+  // Função para remover peça
+  window.removerPeca = (id, btn) => {
+    pecasIdsSet.delete(id);
+    btn.closest('tr').remove();
+    document.getElementById('pecas-ids').value = Array.from(pecasIdsSet).join(',');
+  };
+
+  // Submissão do formulário
+  document.getElementById("form-agendamento").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    
+    // Mostrar loading
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...';
+    submitBtn.disabled = true;
+
+    try {
+      const formData = new FormData(this);
+      
+      // Adicionar cabeçalho para identificar como AJAX
+      const headers = {
+        'X-Requested-With': 'XMLHttpRequest'
+      };
+
+      const response = await fetch(this.action || window.location.pathname, {
+        method: "POST",
+        body: formData,
+        headers: headers
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro ao salvar');
+      }
+
+      if (data.numero_agendamento) {
+        // Mostrar modal de sucesso
+        const modal = new bootstrap.Modal(document.getElementById('modalSucesso'));
+        document.getElementById("numeroAgendamentoExibido").textContent = data.numero_agendamento;
+        modal.show();
+
+        // Configurar ação do botão OK
+        document.getElementById("confirmarSucesso").onclick = function() {
+          modal.hide();
+          if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+          } else {
+            window.location.href = "{% url 'lista_agendamento' %}";
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      alert('Ocorreu um erro ao salvar o agendamento: ' + error.message);
+    } finally {
+      // Restaurar botão
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+});
+</script>
+{% endblock %}

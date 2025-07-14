@@ -1,0 +1,109 @@
+{% extends 'base/base_dashboard.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Equipamento{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-4">Editar Equipamento: <span class="text-primary">#{{ equipamento.registro }}</span></h4>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+      <!-- Coluna da imagem -->
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-dark text-white">
+            <i class="bi bi-image"></i> Imagem do Equipamento
+          </div>
+          <div class="card-body text-center">
+            {% if equipamento.foto %}
+              <img src="{{ equipamento.foto.url }}" alt="Foto" class="img-fluid rounded border">
+            {% else %}
+              <p class="text-muted">Sem imagem</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna do formulário de dados -->
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <i class="bi bi-tools"></i> Dados do Equipamento
+          </div>
+          <div class="card-body">
+            {{ form.non_field_errors }}
+            <div class="row g-3">
+              {% for field in form %}
+              <div class="col-md-6">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field|add_class:"form-control" }}
+                {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formset de Certificações -->
+    <div class="card shadow-sm mt-4">
+      <div class="card-header bg-secondary text-white">
+        <i class="bi bi-award"></i> Certificações
+      </div>
+      <div class="card-body" id="formset-container">
+        {{ formset.non_form_errors }}
+        {% for form in formset.forms %}
+        <div class="border rounded p-3 mb-3">
+          <div class="row g-3">
+            {% for field in form.visible_fields %}
+            <div class="col-md-6">
+              <label class="form-label">{{ field.label }}</label>
+              {{ field|add_class:"form-control" }}
+              {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+              {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+            {% endfor %}
+            {% if form.instance.pk %}
+            <div class="col-md-12">
+              <div class="form-check">
+                {{ form.DELETE }} <label class="form-check-label">Excluir esta certificação</label>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <button type="button" class="btn btn-outline-secondary" id="add-form">Adicionar Certificação</button>
+      </div>
+    </div>
+
+    <div class="text-end mt-4">
+      <a href="{% url 'listar_equipamentos' %}" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-success">Salvar Alterações</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const totalForms = document.getElementById('id_certificacao_set-TOTAL_FORMS');
+  const formContainer = document.getElementById('formset-container');
+  const addBtn = document.getElementById('add-form');
+
+  addBtn.addEventListener('click', () => {
+    const currentFormCount = parseInt(totalForms.value);
+    const emptyFormTemplate = document.getElementById('empty-form').innerHTML.replace(/__prefix__/g, currentFormCount);
+    formContainer.insertAdjacentHTML('beforeend', emptyFormTemplate);
+    totalForms.value = currentFormCount + 1;
+  });
+</script>
+
+<!-- Template para novo formulário de certificação -->
+<div id="empty-form" class="d-none">
+  {{ formset.empty_form.as_p|safe }}
+</div>
+{% endblock %}

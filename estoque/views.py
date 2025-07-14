@@ -17,10 +17,13 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.forms import modelform_factory
+from django.utils.timezone import now
+from django.urls import reverse
 
 # Local Apps
-from .forms import ColaboradorForm, EquipamentoForm
-from .models import Certificacao, Colaborador, Equipamento
+from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm
+from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada
 
 
 class CustomLoginView(LoginView):
@@ -91,6 +94,19 @@ def cadastrar_colaborador(request):
 
     return render(request, 'estoque/cadastro_colaborador.html', {
         'colaborador_form': form
+    })
+    
+@login_required
+def excluir_equipamento(request, pk):
+    equipamento = get_object_or_404(Equipamento, pk=pk)
+
+    if request.method == 'POST':
+        equipamento.delete()
+        messages.success(request, 'Equipamento excluído com sucesso.')
+        return redirect('listar_equipamentos')
+
+    return render(request, 'estoque/equipamento_confirmar_exclusao.html', {
+        'equipamento': equipamento
     })
 
 
@@ -187,6 +203,30 @@ def cadastrar_equipamento(request):
         form = EquipamentoForm()
 
     return render(request, 'estoque/equipamento_cadastro.html', {'form': form})
+
+@login_required
+def editar_equipamento(request, pk):
+    equipamento = get_object_or_404(Equipamento, pk=pk)
+
+    EquipamentoForm = modelform_factory(Equipamento, exclude=['qrcode'])
+    
+    if request.method == 'POST':
+        form = EquipamentoForm(request.POST, request.FILES, instance=equipamento)
+        formset = CertificacaoFormSet(request.POST, request.FILES, instance=equipamento)
+
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            return redirect('detalhe_equipamento', pk=equipamento.pk)
+    else:
+        form = EquipamentoForm(instance=equipamento)
+        formset = CertificacaoFormSet(instance=equipamento)
+
+    return render(request, 'estoque/equipamento_editar.html', {
+        'form': form,
+        'formset': formset,
+        'equipamento': equipamento
+    })
 
 
 @login_required
@@ -308,3 +348,69 @@ def autocomplete_equipamento(request):
             equipamento__icontains=term
         ).values_list('equipamento', flat=True).distinct()
         return JsonResponse(list(equipamentos), safe=False)
+    
+    
+    
+
+@login_required
+def agendar_view(request):
+    if request.method == 'POST':
+        form = AgendamentoForm(request.POST)
+        if form.is_valid():
+            agendamento = form.save(commit=False)
+            agendamento.save()
+
+            pecas_ids = request.POST.get('pecas_ids', '')
+            for pid in pecas_ids.split(','):
+                if pid:
+                    PecaAgendada.objects.create(agendamento=agendamento, equipamento_id=int(pid))
+
+            # Verifica se é AJAX pelo cabeçalho ou pelo formato da resposta
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.accepts('application/json'):
+                return JsonResponse({
+                    'status': 'success',
+                    'numero_agendamento': agendamento.numero_agendamento,
+                    'redirect_url': reverse('sucesso_agendamento', kwargs={'numero': agendamento.numero_agendamento})
+                })
+
+            return redirect('sucesso_agendamento', numero=agendamento.numero_agendamento)
+
+        # Tratamento de erros
+        errors = {field: error.get_json_data() for field, error in form.errors.items()}
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.accepts('application/json'):
+            return JsonResponse({'status': 'error', 'errors': errors}, status=400)
+        
+        return render(request, 'estoque/agendamento_form.html', {'form': form})
+    
+    form = AgendamentoForm()
+    return render(request, 'estoque/agendamento_form.html', {'form': form})
+
+
+
+
+def buscar_pecas_com_certificado(request):
+    q = request.GET.get('q', '')
+    qs = Equipamento.objects.filter(
+        Q(equipamento__icontains=q) | Q(identificador__icontains=q),
+        certificacoes__data_vencimento__gte=now()
+    ).distinct()
+    dados = []
+    for p in qs:
+        cert = p.certificacoes.order_by('-data_vencimento').first()
+        dados.append({
+            'id': p.pk,
+            'nome': p.equipamento,
+            'identificador': p.identificador,
+            'validade': cert.data_vencimento.strftime('%d/%m/%Y') if cert else '',
+            'foto_url': p.foto.url if p.foto else '',
+        })
+    return JsonResponse({'resultados': dados})
+
+
+def sucesso_agendamento(request, numero):
+    return render(request, 'estoque/agendamento_sucesso.html', {'numero_agendamento': numero})
+
+
+@login_required
+def lista_agendamento_view(request):
+    return render(request, 'estoque/lista_agendamento.html')

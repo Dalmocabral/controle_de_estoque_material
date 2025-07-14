@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Colaborador, Equipamento, Certificacao
+from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada
 from django.forms import inlineformset_factory
 from django.core.validators import validate_email
 import re
@@ -120,3 +120,53 @@ CertificacaoFormSet = inlineformset_factory(
     extra=1,  # número de formulários extras a exibir
     can_delete=True
 )
+
+
+class AgendamentoForm(forms.ModelForm):
+    class Meta:
+        model = Agendamento
+        fields = [
+            'nome_solicitante', 'matricula', 'setor_solicitante',
+            'local_uso', 'tipo_operacao', 'data_hora_agendamento'
+        ]
+        widgets = {
+            'nome_solicitante': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome completo do solicitante'
+            }),
+            'matricula': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de matrícula'
+            }),
+            'setor_solicitante': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'local_uso': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Local onde o equipamento será utilizado'
+            }),
+            'tipo_operacao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descreva o tipo de operação que será realizada'
+            }),
+            'data_hora_agendamento': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'class': 'form-control'
+            }),
+        }
+        
+        labels = {
+            'nome_solicitante': 'Nome do Solicitante',
+            'matricula': 'Matrícula',
+            'setor_solicitante': 'Setor Solicitante',
+            'local_uso': 'Local de Uso',
+            'tipo_operacao': 'Tipo de Operação',
+            'data_hora_agendamento': 'Data e Hora do Agendamento',
+        }
+
+
+class PecaAgendadaForm(forms.ModelForm):
+    class Meta:
+        model = PecaAgendada
+        fields = ['equipamento']

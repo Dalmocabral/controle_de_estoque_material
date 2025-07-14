@@ -1,0 +1,23 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Excluir Equipamento{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="alert alert-warning border border-danger shadow-sm">
+    <h4 class="alert-heading">Tem certeza que deseja excluir?</h4>
+    <p>Você está prestes a excluir o equipamento <strong>{{ equipamento.equipamento }}</strong> (Registro #{{ equipamento.registro }}).</p>
+    <p>Essa ação não poderá ser desfeita.</p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="mt-4 d-flex justify-content-between">
+        <a href="{% url 'listar_equipamentos' %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-trash"></i> Confirmar Exclusão
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
