@@ -20,6 +20,9 @@ from django.core.paginator import Paginator
 from django.forms import modelform_factory
 from django.utils.timezone import now
 from django.urls import reverse
+from django.http import JsonResponse
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import ProtectedError
 
 # Local Apps
 from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm
@@ -99,15 +102,18 @@ def cadastrar_colaborador(request):
 @login_required
 def excluir_equipamento(request, pk):
     equipamento = get_object_or_404(Equipamento, pk=pk)
-
+    
     if request.method == 'POST':
-        equipamento.delete()
-        messages.success(request, 'Equipamento excluído com sucesso.')
-        return redirect('listar_equipamentos')
-
-    return render(request, 'estoque/equipamento_confirmar_exclusao.html', {
-        'equipamento': equipamento
-    })
+        try:
+            equipamento.delete()
+            messages.success(request, 'Equipamento excluído com sucesso.')
+            return redirect('listar_equipamentos')
+        except ProtectedError:
+            messages.error(request, 'Não foi possível excluir o equipamento pois ele está vinculado a agendamentos.')
+            return redirect('detalhe_equipamento', pk=pk)
+    
+    # Se não for POST, redireciona para a lista
+    return redirect('listar_equipamentos')
 
 
 @login_required
@@ -414,3 +420,23 @@ def sucesso_agendamento(request, numero):
 @login_required
 def lista_agendamento_view(request):
     return render(request, 'estoque/lista_agendamento.html')
+
+
+@login_required
+def verificar_agendamentos_equipamento(request, pk):
+    equipamento = get_object_or_404(Equipamento, pk=pk)
+    pecas_agendadas = PecaAgendada.objects.filter(equipamento=equipamento).select_related('agendamento')
+    
+    agendamentos = []
+    for peca in pecas_agendadas:
+        agendamentos.append({
+            'id': peca.agendamento.id,
+            'numero': peca.agendamento.numero_agendamento,
+            'solicitante': peca.agendamento.nome_solicitante,
+            'data': peca.agendamento.data_hora_agendamento.strftime('%d/%m/%Y %H:%M')
+        })
+    
+    return JsonResponse({
+        'has_agendamentos': len(agendamentos) > 0,
+        'agendamentos': agendamentos
+    }, encoder=DjangoJSONEncoder)

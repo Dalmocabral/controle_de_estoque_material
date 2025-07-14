@@ -59,9 +59,12 @@
                 <a href="{% url 'editar_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-warning">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'excluir_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir este equipamento?');">
+                <button class="btn btn-sm btn-outline-danger delete-btn" 
+                        data-equipamento-id="{{ equipamento.pk }}"
+                        data-equipamento-name="{{ equipamento.equipamento }}"
+                        data-delete-url="{% url 'excluir_equipamento' equipamento.pk %}">
                   <i class="bi bi-trash"></i>
-                </a>
+                </button>
               </div>
             </td>
           </tr>
@@ -73,5 +76,87 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Modal de Confirmação de Exclusão Simplificado -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalBodyContent">
+          <!-- Conteúdo será preenchido via JavaScript -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <form id="deleteForm" method="post" action="">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Excluir</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+  const modalBodyContent = document.getElementById('modalBodyContent');
+  const deleteForm = document.getElementById('deleteForm');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  
+  document.querySelectorAll('.delete-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      const equipamentoId = this.getAttribute('data-equipamento-id');
+      const equipamentoName = this.getAttribute('data-equipamento-name');
+      const deleteUrl = this.getAttribute('data-delete-url');
+      
+      // Verifica se há agendamentos
+      fetch(`/api/equipamento/${equipamentoId}/verificar-agendamentos/`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.has_agendamentos) {
+            // Mostra mensagem de erro
+            modalBodyContent.innerHTML = `
+              <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
+              <div class="alert alert-warning">
+                <p>Este equipamento está vinculado a agendamentos e não pode ser excluído.</p>
+                <p>Para excluí-lo, primeiro remova-o dos agendamentos relacionados.</p>
+              </div>
+            `;
+            confirmDeleteBtn.classList.add('d-none');
+          } else {
+            // Mostra confirmação normal
+            modalBodyContent.innerHTML = `
+              <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
+            `;
+            confirmDeleteBtn.classList.remove('d-none');
+          }
+          
+          // Atualiza o título e o formulário
+          document.getElementById('confirmDeleteModalLabel').textContent = `Excluir ${equipamentoName}?`;
+          deleteForm.action = deleteUrl;
+          
+          // Mostra o modal
+          confirmDeleteModal.show();
+        })
+        .catch(error => {
+          console.error('Erro ao verificar agendamentos:', error);
+          // Fallback em caso de erro
+          modalBodyContent.innerHTML = `
+            <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
+            <div class="alert alert-danger">
+              Ocorreu um erro ao verificar os agendamentos. Tente novamente.
+            </div>
+          `;
+          confirmDeleteModal.show();
+        });
+    });
+  });
+});
+</script>
 {% endblock %}
