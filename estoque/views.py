@@ -447,4 +447,5 @@ def verificar_agendamentos_equipamento(request, pk):
     
 @login_required
 def lista_agendamento_view(request):
-    return render(request, 'estoque/lista_agendamento.html')
+    agendamentos = Agendamento.objects.all().order_by('-data_hora_agendamento')
+    return render(request, 'estoque/lista_agendamento.html', {'agendamentos': agendamentos})

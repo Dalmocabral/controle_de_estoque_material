@@ -28,6 +28,7 @@ urlpatterns = [
     path('dashboard/agendamento/sucesso/<str:numero>/', views.sucesso_agendamento, name='sucesso_agendamento'),
     path('dashboard/agendamentos/lista_agendamento/', views.lista_agendamento_view, name='lista_agendamento'),
     path('api/equipamento/<int:pk>/verificar-agendamentos/', views.verificar_agendamentos_equipamento, name='verificar_agendamentos_equipamento'),
+   
 
     
 ]

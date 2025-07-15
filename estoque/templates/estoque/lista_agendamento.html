@@ -1,0 +1,44 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Lista de Agendamentos{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-4">Agendamentos Realizados</h4>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover text-center align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Nº Agendamento</th>
+          <th>Data/Hora</th>
+          <th>Solicitante</th>
+          <th>Matrícula</th>
+          <th>Setor</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for agendamento in agendamentos %}
+        <tr>
+          <td>{{ agendamento.numero_agendamento }}</td>
+          <td>{{ agendamento.data_hora_agendamento|date:"d/m/Y H:i" }}</td>
+          <td>{{ agendamento.nome_solicitante }}</td>
+          <td>{{ agendamento.matricula }}</td>
+          <td>{{ agendamento.setor_solicitante }}</td>
+          <td>
+            <a href="#" class="btn btn-sm btn-info">Ver</a>
+            <a href="#" class="btn btn-sm btn-warning">Editar</a>
+            <a href="#" class="btn btn-sm btn-danger"
+               onclick="return confirm('Tem certeza que deseja excluir este agendamento?')">Excluir</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">Nenhum agendamento encontrado.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
