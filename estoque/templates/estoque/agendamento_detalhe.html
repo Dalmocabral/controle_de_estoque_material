@@ -1,0 +1,42 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Detalhes do Agendamento{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-3">Detalhes do Agendamento nº {{ agendamento.numero_agendamento }}</h4>
+
+  <ul class="list-group mb-4">
+    <li class="list-group-item"><strong>Solicitante:</strong> {{ agendamento.nome_solicitante }}</li>
+    <li class="list-group-item"><strong>Matrícula:</strong> {{ agendamento.matricula }}</li>
+    <li class="list-group-item"><strong>Data/Hora:</strong> {{ agendamento.data_hora_agendamento|date:"d/m/Y H:i" }}</li>
+    <li class="list-group-item"><strong>Setor:</strong> {{ agendamento.setor_solicitante }}</li>
+    <li class="list-group-item"><strong>Local de Uso:</strong> {{ agendamento.local_uso }}</li>
+    <li class="list-group-item"><strong>Tipo de Operação:</strong> {{ agendamento.tipo_operacao }}</li>
+  </ul>
+
+  <h5>Peças Agendadas:</h5>
+  <table class="table table-bordered text-center">
+    <thead class="table-light">
+      <tr>
+        <th>Imagem</th>
+        <th>Nome</th>
+        <th>Identificador</th>
+        <th>Validade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in pecas %}
+      <tr>
+        <td><img src="{{ item.equipamento.foto.url }}" width="40" height="40" class="rounded"></td>
+        <td>{{ item.equipamento.equipamento }}</td>
+        <td>{{ item.equipamento.identificador }}</td>
+        <td>{{ item.equipamento.certificacoes.first.data_vencimento|date:"d/m/Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">Nenhuma peça vinculada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a href="{% url 'lista_agendamento' %}" class="btn btn-secondary mt-3">Voltar</a>
+{% endblock %}

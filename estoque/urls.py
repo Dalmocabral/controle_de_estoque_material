@@ -28,7 +28,10 @@ urlpatterns = [
     path('dashboard/agendamento/sucesso/<str:numero>/', views.sucesso_agendamento, name='sucesso_agendamento'),
     path('dashboard/agendamentos/lista_agendamento/', views.lista_agendamento_view, name='lista_agendamento'),
     path('api/equipamento/<int:pk>/verificar-agendamentos/', views.verificar_agendamentos_equipamento, name='verificar_agendamentos_equipamento'),
-   
+    path('dashboard/agendamentos/<int:pk>/', views.agendamento_detalhe, name='agendamento_detalhe'),
+    path('dashboard/agendamentos/<int:pk>/editar/', views.editar_agendamento, name='editar_agendamento'),
+    path('dashboard/agendamentos/<int:pk>/excluir/', views.excluir_agendamento, name='excluir_agendamento'),
+
 
     
 ]

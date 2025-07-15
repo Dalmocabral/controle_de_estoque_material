@@ -376,7 +376,7 @@ def agendar_view(request):
                 return JsonResponse({
                     'status': 'success',
                     'numero_agendamento': agendamento.numero_agendamento,
-                    'redirect_url': reverse('sucesso_agendamento', kwargs={'numero': agendamento.numero_agendamento})
+                    'redirect_url': reverse('lista_agendamento', kwargs={'numero': agendamento.numero_agendamento})
                 })
 
             return redirect('sucesso_agendamento', numero=agendamento.numero_agendamento)
@@ -449,3 +449,62 @@ def verificar_agendamentos_equipamento(request, pk):
 def lista_agendamento_view(request):
     agendamentos = Agendamento.objects.all().order_by('-data_hora_agendamento')
     return render(request, 'estoque/lista_agendamento.html', {'agendamentos': agendamentos})
+
+@login_required
+def agendamento_detalhe(request, pk):
+    agendamento = get_object_or_404(Agendamento, pk=pk)
+    pecas = PecaAgendada.objects.filter(agendamento=agendamento).select_related('equipamento')
+    return render(request, 'estoque/agendamento_detalhe.html', {'agendamento': agendamento, 'pecas': pecas})
+
+@login_required
+def editar_agendamento(request, pk):
+    agendamento = get_object_or_404(Agendamento, pk=pk)
+
+    if request.method == 'POST':
+        form = AgendamentoForm(request.POST, instance=agendamento)
+        if form.is_valid():
+            form.save()
+
+            # Atualiza as peças agendadas (remove as antigas e adiciona as novas)
+            pecas_ids = request.POST.get('pecas_ids', '')
+            novas_pecas_ids = [int(pid) for pid in pecas_ids.split(',') if pid]
+
+            # Remove peças que não estão mais
+            PecaAgendada.objects.filter(agendamento=agendamento).exclude(equipamento_id__in=novas_pecas_ids).delete()
+
+            # Adiciona novas peças (evita duplicatas)
+            pecas_existentes = PecaAgendada.objects.filter(agendamento=agendamento).values_list('equipamento_id', flat=True)
+            for pid in novas_pecas_ids:
+                if pid not in pecas_existentes:
+                    PecaAgendada.objects.create(agendamento=agendamento, equipamento_id=pid)
+
+            return redirect('agendamento_detalhe', pk=agendamento.pk)
+    else:
+        form = AgendamentoForm(instance=agendamento)
+
+    # Pegar as peças já agendadas
+    pecas_agendadas = PecaAgendada.objects.filter(agendamento=agendamento).select_related('equipamento')
+
+    # Buscar a certificação mais recente de cada peça
+    for peca in pecas_agendadas:
+        cert = peca.equipamento.certificacoes.order_by('-data_vencimento').first()
+        peca.certificado_mais_recente = cert
+
+    return render(
+        request,
+        'estoque/agendamento_editar.html',
+        {
+            'form': form,
+            'agendamento': agendamento,
+            'pecas_agendadas': pecas_agendadas,
+        }
+    )
+
+
+@login_required
+def excluir_agendamento(request, pk):
+    agendamento = get_object_or_404(Agendamento, pk=pk)
+    if request.method == 'POST':
+        agendamento.delete()
+        return redirect('lista_agendamento')
+    return render(request, 'estoque/agendamento_excluir.html', {'agendamento': agendamento})

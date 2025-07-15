@@ -1,0 +1,16 @@
+{% extends 'base/base_dashboard.html' %}
+{% block title %}Excluir Agendamento{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-4 text-danger">Excluir Agendamento</h4>
+
+  <p>Tem certeza que deseja excluir o agendamento <strong>nº {{ agendamento.numero_agendamento }}</strong> do solicitante <strong>{{ agendamento.nome_solicitante }}</strong>?</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+    <a href="{% url 'lista_agendamento' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

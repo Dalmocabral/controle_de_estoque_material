@@ -1,0 +1,286 @@
+{% extends 'base/base_dashboard.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Agendamento{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <h4 class="mb-4">Editar Agendamento</h4>
+
+  <form id="form-agendamento" method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label>Nome do Solicitante</label>
+        {{ form.nome_solicitante|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label>Matrícula</label>
+        {{ form.matricula|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label>Data e Hora do Agendamento</label>
+        {{ form.data_hora_agendamento|add_class:"form-control" }}
+      </div>
+      <div class="col-md-6">
+        <label>Setor do Solicitante</label>
+        {{ form.setor_solicitante|add_class:"form-control" }}
+      </div>
+      <div class="col-md-12">
+        <label>Local de Uso</label>
+        {{ form.local_uso|add_class:"form-control" }}
+      </div>
+      <div class="col-md-12">
+        <label>Tipo de Operação</label>
+        {{ form.tipo_operacao|add_class:"form-control" }}
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalPecas">
+        Adicionar Peças
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <h5>Peças Agendadas:</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle text-center">
+          <thead class="table-light">
+            <tr>
+              <th>Imagem da peça</th>
+              <th>Nome da peça</th>
+              <th>Numeração</th>
+              <th>Validade</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pecas-selecionadas">
+            {% for peca in pecas_agendadas %}
+<tr data-peca-id="{{ peca.equipamento.id }}">
+  <td><img src="{{ peca.equipamento.foto.url }}" width="40" height="40" class="rounded" alt="Peça"></td>
+  <td>{{ peca.equipamento.equipamento }}</td>
+  <td>{{ peca.equipamento.identificador }}</td>
+  <td>
+    {% if peca.certificado_mais_recente %}
+      {{ peca.certificado_mais_recente.data_vencimento|date:"d/m/Y" }}
+    {% else %}
+      N/A
+    {% endif %}
+  </td>
+  <td>
+    <button type="button" class="btn btn-sm btn-outline-danger" 
+            onclick="removerPeca({{ peca.equipamento.id }}, this)">
+      × Remover
+    </button>
+  </td>
+</tr>
+
+{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <input type="hidden" name="pecas_ids" id="pecas-ids" value="{% for peca in pecas_agendadas %}{{ peca.equipamento.pk }}{% if not forloop.last %},{% endif %}{% endfor %}" />
+
+    <div class="mt-4 text-end">
+      <button type="submit" class="btn btn-success">Salvar Alterações</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal de Busca -->
+<div class="modal fade" id="modalPecas" tabindex="-1" aria-labelledby="modalPecasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPecasLabel">Selecionar Peça</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="busca-peca" class="form-control mb-3" placeholder="Buscar por nome ou número de identificação">
+        <div id="resultado-busca"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Sucesso -->
+<div class="modal fade" id="modalSucesso" tabindex="-1" aria-labelledby="modalSucessoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalSucessoLabel">Agendamento Atualizado</h5>
+      </div>
+      <div class="modal-body text-center">
+        <p>Agendamento nº <strong id="numeroAgendamentoExibido"></strong> atualizado com sucesso!</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-success" id="confirmarSucesso">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const pecasIdsInput = document.getElementById('pecas-ids');
+    const pecasSelecionadasTabela = document.getElementById('pecas-selecionadas');
+    const buscaInput = document.getElementById('busca-peca');
+    const resultadoBusca = document.getElementById('resultado-busca');
+    
+    // Inicializa o conjunto com os IDs das peças já agendadas
+    let pecasIdsSet = new Set(
+        pecasIdsInput.value ? pecasIdsInput.value.split(',').filter(Boolean).map(id => parseInt(id)) : []
+    );
+
+    // Função para remover peça
+    const removerPeca = function(id, btn) {
+        // Remove do conjunto
+        pecasIdsSet.delete(id);
+        
+        // Remove a linha da tabela
+        const row = btn.closest('tr');
+        if (row) {
+            row.remove();
+        }
+        
+        // Atualiza o input hidden com os IDs restantes
+        pecasIdsInput.value = Array.from(pecasIdsSet).join(',');
+    };
+
+    // Configura event listeners para os botões de remover existentes
+    document.querySelectorAll('#pecas-selecionadas .btn-outline-danger').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = parseInt(this.closest('tr').getAttribute('data-peca-id'));
+            removerPeca(id, this);
+        });
+    });
+
+    // Função para buscar peças
+    buscaInput.addEventListener('input', async () => {
+        const termo = buscaInput.value.trim();
+        if (termo.length < 2) {
+            resultadoBusca.innerHTML = '';
+            return;
+        }
+        
+        try {
+            const resp = await fetch(`/api/buscar-pecas/?q=${encodeURIComponent(termo)}`);
+            
+            if (!resp.ok) {
+                throw new Error('Erro na busca');
+            }
+            
+            const { resultados } = await resp.json();
+
+            resultadoBusca.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Imagem</th>
+                                <th>Nome</th>
+                                <th>Numeração</th>
+                                <th>Validade</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-pecas-body"></tbody>
+                    </table>
+                </div>
+            `;
+
+            const tbody = document.getElementById('tabela-pecas-body');
+
+            if (resultados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">Nenhuma peça encontrada</td></tr>';
+                return;
+            }
+
+            resultados.forEach(peca => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><img src="${peca.foto_url || '{% static "img/default-equipment.png" %}'}" 
+                            width="40" height="40" class="rounded" alt="Peça"></td>
+                    <td>${peca.nome}</td>
+                    <td>${peca.identificador}</td>
+                    <td>${peca.validade || 'N/A'}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-primary btn-adicionar-peca" 
+                                data-id="${peca.id}"
+                                data-nome="${peca.nome.replace(/"/g, '&quot;')}"
+                                data-identificador="${peca.identificador.replace(/"/g, '&quot;')}"
+                                data-validade="${(peca.validade || 'N/A').replace(/"/g, '&quot;')}"
+                                data-foto="${peca.foto_url || ''}">
+                            Adicionar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Configura event listeners para os novos botões de adicionar
+            document.querySelectorAll('.btn-adicionar-peca').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    const nome = this.getAttribute('data-nome');
+                    const identificador = this.getAttribute('data-identificador');
+                    const validade = this.getAttribute('data-validade');
+                    const foto = this.getAttribute('data-foto');
+                    
+                    adicionarPeca(id, nome, identificador, validade, foto);
+                });
+            });
+
+        } catch (err) {
+            console.error('Erro na busca:', err);
+            resultadoBusca.innerHTML = '<div class="alert alert-danger">Erro ao buscar peças</div>';
+        }
+    });
+
+    // Função para adicionar peça
+    const adicionarPeca = function(id, nome, identificador, validade, foto) {
+        if (pecasIdsSet.has(id)) {
+            return; // Já foi adicionada
+        }
+        
+        pecasIdsSet.add(id);
+
+        const row = document.createElement('tr');
+        row.setAttribute('data-peca-id', id);
+        row.innerHTML = `
+            <td><img src="${foto || '{% static "img/default-equipment.png" %}'}" 
+                    width="40" height="40" class="rounded" alt="Peça"></td>
+            <td>${nome}</td>
+            <td>${identificador}</td>
+            <td>${validade}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-danger">
+                    × Remover
+                </button>
+            </td>
+        `;
+        
+        // Configura event listener para o botão de remover
+        const removeBtn = row.querySelector('.btn-outline-danger');
+        removeBtn.addEventListener('click', function() {
+            removerPeca(id, this);
+        });
+        
+        pecasSelecionadasTabela.appendChild(row);
+        pecasIdsInput.value = Array.from(pecasIdsSet).join(',');
+    };
+
+    // Torna a função acessível globalmente para chamadas de outros scripts
+    window.adicionarPeca = adicionarPeca;
+});
+</script>
+{% endblock %}
