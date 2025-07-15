@@ -395,13 +395,19 @@ def agendar_view(request):
 
 
 def buscar_pecas_com_certificado(request):
-    q = request.GET.get('q', '')
-    qs = Equipamento.objects.filter(
+    q = request.GET.get('q', '').strip()
+
+    # IDs dos equipamentos já agendados
+    pecas_agendadas_ids = list(PecaAgendada.objects.values_list('equipamento_id', flat=True))
+
+    # Buscar equipamentos com certificado válido e que NÃO estão agendados
+    equipamentos_disponiveis = Equipamento.objects.filter(
         Q(equipamento__icontains=q) | Q(identificador__icontains=q),
         certificacoes__data_vencimento__gte=now()
-    ).distinct()
+    ).exclude(pk__in=pecas_agendadas_ids).distinct()
+
     dados = []
-    for p in qs:
+    for p in equipamentos_disponiveis:
         cert = p.certificacoes.order_by('-data_vencimento').first()
         dados.append({
             'id': p.pk,
@@ -410,16 +416,13 @@ def buscar_pecas_com_certificado(request):
             'validade': cert.data_vencimento.strftime('%d/%m/%Y') if cert else '',
             'foto_url': p.foto.url if p.foto else '',
         })
+
     return JsonResponse({'resultados': dados})
+
 
 
 def sucesso_agendamento(request, numero):
     return render(request, 'estoque/agendamento_sucesso.html', {'numero_agendamento': numero})
-
-
-@login_required
-def lista_agendamento_view(request):
-    return render(request, 'estoque/lista_agendamento.html')
 
 
 @login_required
@@ -440,3 +443,8 @@ def verificar_agendamentos_equipamento(request, pk):
         'has_agendamentos': len(agendamentos) > 0,
         'agendamentos': agendamentos
     }, encoder=DjangoJSONEncoder)
+    
+    
+@login_required
+def lista_agendamento_view(request):
+    return render(request, 'estoque/lista_agendamento.html')
