@@ -1,0 +1,295 @@
+{% extends 'base/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-box-seam me-2 text-primary"></i>
+            Registro de Saída de Materiais
+        </h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#buscarAgendamentoModal">
+            <i class="bi bi-search me-2"></i>Buscar Agendamento
+        </button>
+    </div>
+
+    <!-- Modal de Busca -->
+    <div class="modal fade" id="buscarAgendamentoModal" tabindex="-1" aria-labelledby="buscarAgendamentoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="buscarAgendamentoModalLabel">
+                        <i class="bi bi-search me-2"></i>Buscar Agendamento
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="numero_agendamento" class="form-label">Número do Agendamento</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                                <input type="text" class="form-control form-control-lg" 
+                                       id="numero_agendamento" name="numero_agendamento"
+                                       placeholder="Digite o número do agendamento" required autofocus>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" name="buscar_agendamento" class="btn btn-primary">
+                            <i class="bi bi-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dados do Agendamento -->
+    {% if agendamento %}
+    <div class="card shadow-lg mt-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-card-checklist me-2"></i>
+                    Agendamento #{{ agendamento.numero_agendamento }}
+                </h4>
+                <span class="badge bg-light text-dark fs-6">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    {{ agendamento.data_hora_agendamento|date:"d/m/Y H:i" }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                <i class="bi bi-person-badge me-2"></i>Informações do Solicitante
+                            </h5>
+                            <hr>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-person-fill text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ agendamento.nome_solicitante }}</h6>
+                                    <small class="text-muted">Matrícula: {{ agendamento.matricula }}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-building text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ agendamento.get_setor_solicitante_display }}</h6>
+                                    <small class="text-muted">Setor Solicitante</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card h-100 border-0">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                <i class="bi bi-geo-alt me-2"></i>Informações de Uso
+                            </h5>
+                            <hr>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-pin-map-fill text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ agendamento.local_uso }}</h6>
+                                    <small class="text-muted">Local de Uso</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-tools text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ agendamento.tipo_operacao }}</h6>
+                                    <small class="text-muted">Tipo de Operação</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Peças Agendadas em Tabela -->
+            <h5 class="mt-2 mb-3 text-primary">
+                <i class="bi bi-box-seam me-2"></i>Peças Agendadas
+            </h5>
+            
+            <div class="card border-primary mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        Relação de Materiais
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="60px" class="text-center">#</th>
+                                    <th class="text-center">Foto</th>
+                                    <th>Peça/Equipamento</th>
+                                    <th>Identificador</th>
+                                    <th>Validade</th>
+                                    
+                                    <th class="text-center">Localização</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for peca in agendamento.pecas_agendadas.all %}
+                                <tr>
+                                     <td class="text-center align-middle">{{ forloop.counter }}</td>
+                                    <td class="text-center align-middle">
+                                        {% if peca.equipamento.foto %}
+                                        <img src="{{ peca.equipamento.foto.url }}" 
+                                             class="img-thumbnail" 
+                                             style="max-width: 100px; max-height: 100px; object-fit: cover;"
+                                             alt="{{ peca.equipamento.equipamento }}"
+                                             data-bs-toggle="tooltip" 
+                                             data-bs-title="Visualizar imagem"
+                                             onclick="showImageModal('{{ peca.equipamento.foto.url }}', '{{ peca.equipamento.equipamento }}')">
+                                        {% else %}
+                                        <i class="bi bi-image text-muted" style="font-size: 1.5rem;"></i>
+                                        {% endif %}
+                                    </td>
+                                   
+                                    <td class="align-middle">
+                                        <strong>{{ peca.equipamento.equipamento }}</strong>
+                                    </td>
+                                    <td class="align-middle">
+                                       
+                                            {{ peca.equipamento.identificador }}
+                                        
+                                    </td>
+                                     <td class="text-center align-middle">
+    {% with peca.equipamento.certificacoes.first as certificacao %}
+        {% if certificacao and certificacao.data_vencimento %}
+            {% if certificacao.data_vencimento < now %}
+                <span class="badge bg-danger" data-bs-toggle="tooltip" 
+                      data-bs-title="Vencido em {{ certificacao.data_vencimento|date:'d/m/Y' }}">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    {{ certificacao.data_vencimento|date:"d/m/Y" }}
+                </span>
+            {% else %}
+                <span class="badge bg-success" data-bs-toggle="tooltip"
+                      data-bs-title="Válido até {{ certificacao.data_vencimento|date:'d/m/Y' }}">
+                    <i class="bi bi-check-circle-fill me-1"></i>
+                    {{ certificacao.data_vencimento|date:"d/m/Y" }}
+                </span>
+            {% endif %}
+        {% else %}
+            <span class="badge bg-secondary">
+                <i class="bi bi-question-circle-fill me-1"></i>
+                Sem validade
+            </span>
+        {% endif %}
+    {% endwith %}
+</td>
+                                    
+                                    <td class="text-center align-middle">
+                                        {{ peca.equipamento.localizacao }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para visualização da imagem em tamanho maior -->
+            <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="imageModalLabel"></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img id="modalImage" src="" class="img-fluid" alt="">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulário de Saída -->
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <input type="hidden" name="agendamento_id" value="{{ agendamento.id }}">
+                
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clipboard-check me-2"></i>
+                            Registrar Saída
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">
+                                <i class="bi bi-chat-left-text me-2 text-primary"></i>Observações
+                            </label>
+                            <textarea name="observacoes" id="observacoes" 
+                                      class="form-control" rows="3"
+                                      placeholder="Informe qualquer observação relevante sobre as peças..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="registrar_saida" 
+                                    class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Confirmar Saída de Materiais
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Função para exibir a imagem no modal
+function showImageModal(imageUrl, title) {
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('imageModalLabel').textContent = title;
+    var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    imageModal.show();
+}
+
+// Inicializar tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Focar no campo de busca quando o modal é aberto
+    document.getElementById('buscarAgendamentoModal').addEventListener('shown.bs.modal', function () {
+        document.getElementById('numero_agendamento').focus();
+    });
+});
+</script>
+{% endblock %}

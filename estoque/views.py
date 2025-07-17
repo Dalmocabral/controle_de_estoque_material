@@ -23,10 +23,12 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import ProtectedError
+from django.db import transaction
+from django.db import IntegrityError
 
 # Local Apps
 from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm
-from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada
+from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca   
 
 
 class CustomLoginView(LoginView):
@@ -357,41 +359,59 @@ def autocomplete_equipamento(request):
     
     
     
-
 @login_required
 def agendar_view(request):
     if request.method == 'POST':
         form = AgendamentoForm(request.POST)
         if form.is_valid():
-            agendamento = form.save(commit=False)
-            agendamento.save()
+            try:
+                agendamento = form.save(commit=False)
+                agendamento.status = 'AG'  # Definindo status como 'Agendado'
+                agendamento.save()
 
-            pecas_ids = request.POST.get('pecas_ids', '')
-            for pid in pecas_ids.split(','):
-                if pid:
-                    PecaAgendada.objects.create(agendamento=agendamento, equipamento_id=int(pid))
+                pecas_ids = request.POST.get('pecas_ids', '')
+                if pecas_ids:
+                    for pid in pecas_ids.split(','):
+                        if pid:
+                            PecaAgendada.objects.create(
+                                agendamento=agendamento, 
+                                equipamento_id=int(pid)
+                            )
 
-            # Verifica se é AJAX pelo cabeçalho ou pelo formato da resposta
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.accepts('application/json'):
-                return JsonResponse({
-                    'status': 'success',
-                    'numero_agendamento': agendamento.numero_agendamento,
-                    'redirect_url': reverse('lista_agendamento', kwargs={'numero': agendamento.numero_agendamento})
-                })
+                # Resposta para requisições AJAX
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True,
+                        'numero_agendamento': agendamento.numero_agendamento,
+                        'redirect_url': reverse('sucesso_agendamento', kwargs={'numero': agendamento.numero_agendamento})
+                    })
 
-            return redirect('sucesso_agendamento', numero=agendamento.numero_agendamento)
+                # Redirecionamento tradicional
+                return redirect('sucesso_agendamento', numero=agendamento.numero_agendamento)
 
-        # Tratamento de erros
-        errors = {field: error.get_json_data() for field, error in form.errors.items()}
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.accepts('application/json'):
-            return JsonResponse({'status': 'error', 'errors': errors}, status=400)
+            except Exception as e:
+                # Tratamento de erros para AJAX
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'error': str(e)
+                    }, status=400)
+                raise e
+
+        # Formulário inválido
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            errors = {field: [str(error) for error in error_list] for field, error_list in form.errors.items()}
+            return JsonResponse({
+                'success': False,
+                'errors': errors
+            }, status=400)
         
+        # Caso não seja AJAX e formulário inválido
         return render(request, 'estoque/agendamento_form.html', {'form': form})
     
+    # GET request
     form = AgendamentoForm()
     return render(request, 'estoque/agendamento_form.html', {'form': form})
-
-
 
 
 def buscar_pecas_com_certificado(request):
@@ -508,3 +528,51 @@ def excluir_agendamento(request, pk):
         agendamento.delete()
         return redirect('lista_agendamento')
     return render(request, 'estoque/agendamento_excluir.html', {'agendamento': agendamento})
+
+
+
+# views.py
+@login_required
+def saida_material(request):
+    agendamento = None
+    
+    if request.method == 'POST':
+        # Buscar agendamento
+        if 'buscar_agendamento' in request.POST:
+            numero_agendamento = request.POST.get('numero_agendamento')
+            try:
+                agendamento = Agendamento.objects.get(numero_agendamento=numero_agendamento)
+            except Agendamento.DoesNotExist:
+                messages.error(request, 'Agendamento não encontrado!')
+        
+        # Registrar saída
+        elif 'registrar_saida' in request.POST:
+            agendamento_id = request.POST.get('agendamento_id')
+            agendamento = get_object_or_404(Agendamento, pk=agendamento_id)
+            
+            # Verificar se já existe saída para este agendamento
+            if SaidaMaterial.objects.filter(agendamento=agendamento).exists():
+                messages.error(request, 'Já existe uma saída registrada para este agendamento!')
+            else:
+                # Criar registro de saída
+                SaidaMaterial.objects.create(
+                    agendamento=agendamento,
+                    responsavel_entrega=request.user.colaborador,
+                    observacoes=request.POST.get('observacoes', '')
+                )
+                
+                # Atualizar status do agendamento
+                agendamento.status = 'RT'  # Retirado
+                agendamento.save()
+                
+                # Atualizar estoque
+                for peca in agendamento.pecas_agendadas.all():
+                    peca.equipamento.quantidade -= 1
+                    peca.equipamento.save()
+                
+                messages.success(request, 'Saída registrada com sucesso!')
+                return redirect('detalhe_saida', agendamento_id=agendamento.id)
+
+    return render(request, 'estoque/saida_material.html', {
+        'agendamento': agendamento
+    })

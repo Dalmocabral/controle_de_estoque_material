@@ -31,6 +31,7 @@ urlpatterns = [
     path('dashboard/agendamentos/<int:pk>/', views.agendamento_detalhe, name='agendamento_detalhe'),
     path('dashboard/agendamentos/<int:pk>/editar/', views.editar_agendamento, name='editar_agendamento'),
     path('dashboard/agendamentos/<int:pk>/excluir/', views.excluir_agendamento, name='excluir_agendamento'),
+    path('dashboard/agendamentos/saida-material/', views.saida_material, name='saida_material'),
 
 
     

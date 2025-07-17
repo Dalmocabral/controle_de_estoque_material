@@ -138,6 +138,13 @@ class Agendamento(models.Model):
         ('TERMINAL2', 'Terminal 2'),
     ]
     
+    STATUS_CHOICES = [
+        ('AG', 'Agendado'),  # Status inicial quando criado
+        ('RT', 'Retirado'),  # Quando os materiais são retirados
+        ('DV', 'Devolvido'),  # Quando os materiais são devolvidos
+        ('CN', 'Cancelado'),  # Quando o agendamento é cancelado
+    ]
+    
     numero_agendamento = models.CharField(max_length=10, unique=True, blank=True)
     nome_solicitante = models.CharField(max_length=100)
     matricula = models.CharField(max_length=50)
@@ -150,10 +157,15 @@ class Agendamento(models.Model):
     local_uso = models.TextField()
     tipo_operacao = models.TextField()
     criado_em = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=2,
+        choices=STATUS_CHOICES,
+        default='AG'  # Valor padrão 'Agendado'
+    )
 
     def gerar_numero_agendamento(self):
         while True:
-            numero = str(random.randint(1, 99999)).zfill(5)  # Aumentei para 5 dígitos
+            numero = str(random.randint(1, 99999)).zfill(5)
             if not Agendamento.objects.filter(numero_agendamento=numero).exists():
                 self.numero_agendamento = numero
                 break
@@ -164,7 +176,7 @@ class Agendamento(models.Model):
         super().save(*args, **kwargs)
         
     def __str__(self):
-        return f"Agendamento {self.numero_agendamento} - {self.nome_solicitante}"
+        return f"Agendamento {self.numero_agendamento} - {self.nome_solicitante} ({self.get_status_display()})"
 
 
 class PecaAgendada(models.Model):
@@ -173,5 +185,64 @@ class PecaAgendada(models.Model):
 
     def __str__(self):
         return f"{self.equipamento} no {self.agendamento}"
+    
+    
+class SaidaMaterial(models.Model):
+    agendamento = models.OneToOneField(
+        'Agendamento',
+        on_delete=models.PROTECT,
+        related_name='saida_material'
+    )
+    responsavel_entrega = models.ForeignKey(
+        'Colaborador',
+        on_delete=models.PROTECT,
+        related_name='entregas_realizadas'
+    )
+    data_registro = models.DateTimeField(auto_now_add=True)
+    observacoes = models.TextField(blank=True)
+    termo_assinado = models.FileField(
+        upload_to='termos_saida/%Y/%m/%d/',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = 'Saída de Material'
+        verbose_name_plural = 'Saídas de Materiais'
+        ordering = ['-data_registro']
+
+    def __str__(self):
+        return f"Saída #{self.id} - Agendamento {self.agendamento.numero_agendamento}"
+
+class VerificacaoPeca(models.Model):
+    saida = models.ForeignKey(
+        SaidaMaterial,
+        on_delete=models.CASCADE,
+        related_name='verificacoes'
+    )
+    peca = models.ForeignKey(
+        'PecaAgendada',
+        on_delete=models.PROTECT,
+        related_name='verificacoes'
+    )
+    tem_avaria = models.BooleanField(default=False)
+    na_validade = models.BooleanField(default=True)
+    tem_certificacao = models.BooleanField(default=True)
+    observacao = models.TextField(blank=True)
+    foto_avaria = models.ImageField(
+        upload_to='avarias/%Y/%m/%d/',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = 'Verificação de Peça'
+        verbose_name_plural = 'Verificações de Peças'
+
+    def __str__(self):
+        status = "OK"
+        if self.tem_avaria or not self.na_validade or not self.tem_certificacao:
+            status = "COM PROBLEMAS"
+        return f"Verificação {self.peca.id} - {status}"
 
   
