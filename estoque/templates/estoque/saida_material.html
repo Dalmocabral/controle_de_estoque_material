@@ -357,34 +357,39 @@ document.addEventListener('DOMContentLoaded', function () {
     let lastX = 0;
     let lastY = 0;
 
-    function resizeCanvas() {
-        const container = canvas.parentElement;
-        const width = container.offsetWidth;
-        const height = 150;
-        const scale = window.devicePixelRatio || 1;
-
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
-
-        canvas.width = width * scale;
-        canvas.height = height * scale;
-        canvas.style.width = width + 'px';
-        canvas.style.height = height + 'px';
-
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.scale(scale, scale);
-        ctx.drawImage(tempCanvas, 0, 0);
+    // Estilo de linha (mão livre)
+    function initStyle() {
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
     }
 
+    // Redimensiona o canvas mantendo a escala
+    function resizeCanvas() {
+    const container = canvas.parentElement;
+    const width = container.offsetWidth;
+    const height = 150;
+    const scale = window.devicePixelRatio || 1;
+
+    if (width === 0 || height === 0) return; // evita erro se o modal estiver oculto
+
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(scale, scale);
+    initStyle();
+}
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
     function getPosition(e) {
         const rect = canvas.getBoundingClientRect();
-        let clientX = 0, clientY = 0;
+        let clientX, clientY;
 
         if (e.touches && e.touches.length > 0) {
             clientX = e.touches[0].clientX;
@@ -396,74 +401,74 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const x = (clientX - rect.left) * (canvas.width / rect.width);
         const y = (clientY - rect.top) * (canvas.height / rect.height);
+
         return [x, y];
     }
 
-    function initCanvasEvents() {
-        canvas.addEventListener('mousedown', (e) => {
-            isDrawing = true;
-            [lastX, lastY] = getPosition(e);
+    // Desenho com mouse
+    canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        [lastX, lastY] = getPosition(e);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const [x, y] = getPosition(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        [lastX, lastY] = [x, y];
+    });
+
+    ['mouseup', 'mouseout'].forEach(event =>
+        canvas.addEventListener(event, () => isDrawing = false)
+    );
+
+    // Desenho com touch/caneta
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        isDrawing = true;
+        [lastX, lastY] = getPosition(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const [x, y] = getPosition(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        [lastX, lastY] = [x, y];
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => isDrawing = false);
+    canvas.addEventListener('touchcancel', () => isDrawing = false);
+
+    // Botão limpar
+    const limparBtn = document.getElementById('limparAssinatura');
+    if (limparBtn) {
+        limparBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            initStyle();
         });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isDrawing) return;
-            const [x, y] = getPosition(e);
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            [lastX, lastY] = [x, y];
-        });
-
-        canvas.addEventListener('mouseup', () => isDrawing = false);
-        canvas.addEventListener('mouseout', () => isDrawing = false);
-
-        canvas.addEventListener('touchstart', (e) => {
-            isDrawing = true;
-            [lastX, lastY] = getPosition(e);
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            if (!isDrawing) return;
-            const [x, y] = getPosition(e);
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            [lastX, lastY] = [x, y];
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', () => isDrawing = false);
     }
 
-    document.getElementById('limparAssinatura')?.addEventListener('click', () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-    });
-
-    window.isCanvasBlank = function () {
-        const blank = document.createElement('canvas');
-        blank.width = canvas.width;
-        blank.height = canvas.height;
-        return canvas.toDataURL() === blank.toDataURL();
-    };
-
-    // Detecta se o canvas ficou visível (ex: quando o modal abrir)
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                resizeCanvas();
-                initCanvasEvents();
+    // Exporta base64 antes de enviar
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            const assinaturaBase64Input = document.getElementById('id_assinatura_base64');
+            if (assinaturaBase64Input) {
+                assinaturaBase64Input.value = canvas.toDataURL();
             }
         });
-    });
-    observer.observe(canvas);
+    }
 
-    // Também garante redimensionamento na janela
-    window.addEventListener('resize', resizeCanvas);
+    initStyle();
 });
 </script>
+
 {% endblock %}
+
