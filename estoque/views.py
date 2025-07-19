@@ -27,8 +27,8 @@ from django.db import transaction
 from django.db import IntegrityError
 
 # Local Apps
-from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm
-from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca   
+from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm
+from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca, ChecklistSaida, TermoRetirada
 
 
 class CustomLoginView(LoginView):
@@ -572,7 +572,47 @@ def saida_material(request):
                 
                 messages.success(request, 'Saída registrada com sucesso!')
                 return redirect('detalhe_saida', agendamento_id=agendamento.id)
+            
+            # Registrar saída
+        elif 'registrar_saida' in request.POST:
+            agendamento_id = request.POST.get('agendamento_id')
+            agendamento = get_object_or_404(Agendamento, pk=agendamento_id)
+
+            if SaidaMaterial.objects.filter(agendamento=agendamento).exists():
+                messages.error(request, 'Já existe uma saída registrada para este agendamento!')
+            else:
+                saida = SaidaMaterial.objects.create(
+                    agendamento=agendamento,
+                    responsavel_entrega=request.user.colaborador,
+                    observacoes=request.POST.get('observacoes', '')
+                )
+
+                ChecklistSaida.objects.create(
+                    saida=saida,
+                    alguma_avaria='alguma_avaria' in request.POST,
+                    validade_ok='validade_ok' in request.POST,
+                    certificacao_ok='certificacao_ok' in request.POST,
+                )
+
+                TermoRetirada.objects.create(
+                    saida=saida,
+                    lido='lido' in request.POST,
+                    assinatura_base64=request.POST.get('assinatura_base64', '')
+                )
+
+                agendamento.status = 'RT'
+                agendamento.save()
+
+                for peca in agendamento.pecas_agendadas.all():
+                    peca.equipamento.quantidade -= 1
+                    peca.equipamento.save()
+
+                messages.success(request, 'Saída registrada com sucesso!')
+                return redirect('detalhe_saida', agendamento_id=agendamento.id)
+
 
     return render(request, 'estoque/saida_material.html', {
-        'agendamento': agendamento
-    })
+                'agendamento': agendamento
+            })
+    
+    

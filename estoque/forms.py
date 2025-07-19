@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada
+from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada, ChecklistSaida, TermoRetirada
 from django.forms import inlineformset_factory
 from django.core.validators import validate_email
 import re
@@ -170,3 +170,23 @@ class PecaAgendadaForm(forms.ModelForm):
     class Meta:
         model = PecaAgendada
         fields = ['equipamento']
+        
+        
+class ChecklistSaidaForm(forms.ModelForm):
+    class Meta:
+        model = ChecklistSaida
+        fields = ['alguma_avaria', 'validade_ok', 'certificacao_ok']
+        widgets = {
+            'alguma_avaria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'validade_ok': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'certificacao_ok': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+class TermoRetiradaForm(forms.ModelForm):
+    class Meta:
+        model = TermoRetirada
+        fields = ['lido', 'assinatura_base64']
+        widgets = {
+            'lido': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'assinatura_base64': forms.HiddenInput(),
+        }

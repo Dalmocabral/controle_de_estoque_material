@@ -244,5 +244,22 @@ class VerificacaoPeca(models.Model):
         if self.tem_avaria or not self.na_validade or not self.tem_certificacao:
             status = "COM PROBLEMAS"
         return f"Verificação {self.peca.id} - {status}"
+    
+class ChecklistSaida(models.Model):
+    saida = models.OneToOneField(SaidaMaterial, on_delete=models.CASCADE, related_name='checklist')
+    alguma_avaria = models.BooleanField(default=False)
+    validade_ok = models.BooleanField(default=False)
+    certificacao_ok = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Checklist da Saída #{self.saida.id}"
+
+class TermoRetirada(models.Model):
+    saida = models.OneToOneField(SaidaMaterial, on_delete=models.CASCADE, related_name='termo')
+    lido = models.BooleanField(default=False)
+    assinatura_base64 = models.TextField(blank=True)  # salva a imagem da assinatura
+
+    def __str__(self):
+        return f"Termo da Saída #{self.saida.id}"
 
   

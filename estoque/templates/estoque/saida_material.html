@@ -31,9 +31,9 @@
                             <label for="numero_agendamento" class="form-label">Número do Agendamento</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                                <input type="text" class="form-control form-control-lg" 
-                                       id="numero_agendamento" name="numero_agendamento"
-                                       placeholder="Digite o número do agendamento" required autofocus>
+                                <input type="text" class="form-control form-control-lg" id="numero_agendamento"
+                                    name="numero_agendamento" placeholder="Digite o número do agendamento" required
+                                    autofocus>
                             </div>
                         </div>
                     </div>
@@ -63,11 +63,12 @@
                 </span>
             </div>
         </div>
-        
+
         <div class="card-body">
+            <!-- Seção de Informações -->
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <div class="card h-100 border-0">
+                    <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title text-primary">
                                 <i class="bi bi-person-badge me-2"></i>Informações do Solicitante
@@ -82,7 +83,7 @@
                                     <small class="text-muted">Matrícula: {{ agendamento.matricula }}</small>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-3">
+                            <div class="d-flex align-items-center">
                                 <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
                                     <i class="bi bi-building text-primary fs-4"></i>
                                 </div>
@@ -94,9 +95,9 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-6">
-                    <div class="card h-100 border-0">
+                    <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title text-primary">
                                 <i class="bi bi-geo-alt me-2"></i>Informações de Uso
@@ -125,104 +126,101 @@
                 </div>
             </div>
 
-            <!-- Peças Agendadas em Tabela -->
-            <h5 class="mt-2 mb-3 text-primary">
-                <i class="bi bi-box-seam me-2"></i>Peças Agendadas
-            </h5>
-            
-            <div class="card border-primary mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-list-check me-2"></i>
-                        Relação de Materiais
-                    </h6>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="60px" class="text-center">#</th>
-                                    <th class="text-center">Foto</th>
-                                    <th>Peça/Equipamento</th>
-                                    <th>Identificador</th>
-                                    <th>Validade</th>
-                                    
-                                    <th class="text-center">Localização</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for peca in agendamento.pecas_agendadas.all %}
-                                <tr>
-                                     <td class="text-center align-middle">{{ forloop.counter }}</td>
-                                    <td class="text-center align-middle">
-                                        {% if peca.equipamento.foto %}
-                                        <img src="{{ peca.equipamento.foto.url }}" 
-                                             class="img-thumbnail" 
-                                             style="max-width: 100px; max-height: 100px; object-fit: cover;"
-                                             alt="{{ peca.equipamento.equipamento }}"
-                                             data-bs-toggle="tooltip" 
-                                             data-bs-title="Visualizar imagem"
-                                             onclick="showImageModal('{{ peca.equipamento.foto.url }}', '{{ peca.equipamento.equipamento }}')">
-                                        {% else %}
-                                        <i class="bi bi-image text-muted" style="font-size: 1.5rem;"></i>
-                                        {% endif %}
-                                    </td>
-                                   
-                                    <td class="align-middle">
-                                        <strong>{{ peca.equipamento.equipamento }}</strong>
-                                    </td>
-                                    <td class="align-middle">
-                                       
-                                            {{ peca.equipamento.identificador }}
-                                        
-                                    </td>
-                                     <td class="text-center align-middle">
-    {% with peca.equipamento.certificacoes.first as certificacao %}
-        {% if certificacao and certificacao.data_vencimento %}
-            {% if certificacao.data_vencimento < now %}
-                <span class="badge bg-danger" data-bs-toggle="tooltip" 
-                      data-bs-title="Vencido em {{ certificacao.data_vencimento|date:'d/m/Y' }}">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    {{ certificacao.data_vencimento|date:"d/m/Y" }}
-                </span>
-            {% else %}
-                <span class="badge bg-success" data-bs-toggle="tooltip"
-                      data-bs-title="Válido até {{ certificacao.data_vencimento|date:'d/m/Y' }}">
-                    <i class="bi bi-check-circle-fill me-1"></i>
-                    {{ certificacao.data_vencimento|date:"d/m/Y" }}
-                </span>
-            {% endif %}
-        {% else %}
-            <span class="badge bg-secondary">
-                <i class="bi bi-question-circle-fill me-1"></i>
-                Sem validade
-            </span>
-        {% endif %}
-    {% endwith %}
-</td>
-                                    
-                                    <td class="text-center align-middle">
-                                        {{ peca.equipamento.localizacao }}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+            <!-- Peças Agendadas -->
+            <div class="mb-4">
+                <h5 class="text-primary mb-3">
+                    <i class="bi bi-box-seam me-2"></i>Peças Agendadas
+                </h5>
+                
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-list-check me-2"></i>
+                            Relação de Materiais
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="50px" class="text-center">#</th>
+                                        <th class="text-center">Foto</th>
+                                        <th>Peça/Equipamento</th>
+                                        <th>Identificador</th>
+                                        <th>Validade</th>
+                                        <th class="text-center">Localização</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for peca in agendamento.pecas_agendadas.all %}
+                                    <tr>
+                                        <td class="text-center align-middle">{{ forloop.counter }}</td>
+                                        <td class="text-center align-middle">
+                                            {% if peca.equipamento.foto %}
+                                            <img src="{{ peca.equipamento.foto.url }}" class="img-thumbnail"
+                                                style="width: 60px; height: 60px; object-fit: cover;"
+                                                alt="{{ peca.equipamento.equipamento }}" data-bs-toggle="tooltip"
+                                                data-bs-title="Visualizar imagem"
+                                                onclick="showImageModal(\'{{ peca.equipamento.foto.url }}\', \'{{ peca.equipamento.equipamento }}\')">
+                                            {% else %}
+                                            <div class="d-flex justify-content-center align-items-center" style="width: 60px; height: 60px;">
+                                                <i class="bi bi-image text-muted fs-4"></i>
+                                            </div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="align-middle">
+                                            <strong>{{ peca.equipamento.equipamento }}</strong>
+                                        </td>
+                                        <td class="align-middle">
+                                            <span class="badge bg-primary">{{ peca.equipamento.identificador }}</span>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            {% with peca.equipamento.certificacoes.first as certificacao %}
+                                            {% if certificacao and certificacao.data_vencimento %}
+                                                {% if certificacao.data_vencimento < now %}
+                                                <span class="badge bg-danger" data-bs-toggle="tooltip"
+                                                    data-bs-title="Vencido em {{ certificacao.data_vencimento|date:'d/m/Y' }}">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                    {{ certificacao.data_vencimento|date:"d/m/Y" }}
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-success" data-bs-toggle="tooltip"
+                                                    data-bs-title="Válido até {{ certificacao.data_vencimento|date:'d/m/Y' }}">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                                    {{ certificacao.data_vencimento|date:"d/m/Y" }}
+                                                </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-question-circle-fill me-1"></i>
+                                                    Sem validade
+                                                </span>
+                                            {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            {{ peca.equipamento.localizacao }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Modal para visualização da imagem em tamanho maior -->
+            <!-- Modal para visualização da imagem -->
             <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="imageModalLabel"></h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body text-center">
-                            <img id="modalImage" src="" class="img-fluid" alt="">
+                            <img id="modalImage" src="" class="img-fluid rounded" alt="">
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -235,8 +233,8 @@
             <form method="post" class="mt-4">
                 {% csrf_token %}
                 <input type="hidden" name="agendamento_id" value="{{ agendamento.id }}">
-                
-                <div class="card border-primary">
+
+                <div class="card border-primary shadow-sm">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-clipboard-check me-2"></i>
@@ -244,18 +242,41 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Checklist -->
+                        <div class="mb-4">
+                            <h5 class="text-primary"><i class="bi bi-check2-square me-2"></i>Checklist de Verificação</h5>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="alguma_avaria" id="alguma_avaria">
+                                <label class="form-check-label" for="alguma_avaria">Alguma peça apresenta avaria</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="validade_ok" id="validade_ok" checked>
+                                <label class="form-check-label" for="validade_ok">Todas as peças estão dentro da validade</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="certificacao_ok" id="certificacao_ok" checked>
+                                <label class="form-check-label" for="certificacao_ok">Todas as peças possuem certificação válida</label>
+                            </div>
+                        </div>
+
+                        <!-- Botão para visualizar termo -->
+                        <div class="mb-4">
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#termoResponsabilidadeModal">
+                                <i class="bi bi-file-earmark-text me-2"></i>Visualizar Termo de Responsabilidade
+                            </button>
+                        </div>
+
+                        <!-- Observações -->
                         <div class="mb-3">
                             <label for="observacoes" class="form-label">
                                 <i class="bi bi-chat-left-text me-2 text-primary"></i>Observações
                             </label>
-                            <textarea name="observacoes" id="observacoes" 
-                                      class="form-control" rows="3"
-                                      placeholder="Informe qualquer observação relevante sobre as peças..."></textarea>
+                            <textarea name="observacoes" id="observacoes" class="form-control" rows="3"
+                                placeholder="Informe qualquer observação relevante sobre as peças..."></textarea>
                         </div>
-                        
+
                         <div class="d-grid gap-2">
-                            <button type="submit" name="registrar_saida" 
-                                    class="btn btn-success btn-lg">
+                            <button type="submit" name="registrar_saida" class="btn btn-success btn-lg">
                                 <i class="bi bi-check-circle me-2"></i>
                                 Confirmar Saída de Materiais
                             </button>
@@ -266,30 +287,183 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Modal do Termo de Responsabilidade -->
+    <div class="modal fade" id="termoResponsabilidadeModal" tabindex="-1" aria-labelledby="termoResponsabilidadeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="termoResponsabilidadeModalLabel">
+                        <i class="bi bi-file-earmark-text me-2"></i>Termo de Responsabilidade
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="termo-content mb-4" style="max-height: 400px; overflow-y: auto;">
+                        <h5 class="text-center mb-4">TERMO DE RESPONSABILIDADE</h5>
+                        <p>Eu, <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>, 
+                        matrícula <strong>{{ request.user.colaborador.matricula }}</strong>, 
+                        declaro para os devidos fins que:</p>
+                        
+                        <ol class="mb-4">
+                            <li class="mb-2">Estou ciente de que sou responsável pelos materiais listados neste agendamento;</li>
+                            <li class="mb-2">Comprometo-me a utilizar os materiais apenas para os fins descritos no agendamento;</li>
+                            <li class="mb-2">Concordo em devolver os materiais no prazo e condições acordadas;</li>
+                            <li class="mb-2">Estou ciente de que serei responsabilizado por qualquer dano ou perda dos materiais;</li>
+                            <li class="mb-2">Confirmo que verifiquei o estado dos materiais no ato da retirada.</li>
+                        </ol>
+                        
+                        <div class="mb-4">
+                            <p class="text-center">Local e Data: ____________________, ___/___/____</p>
+                        </div>
+                        
+                        <div class="mb-3">
+    <label class="form-label">Assinatura Digital:</label>
+    <div class="border p-2" style="height: 160px;">
+        <canvas id="signatureCanvas" style="width: 100%; height: 100%; touch-action: none;"></canvas>
+    </div>
+    <button type="button" class="btn btn-sm btn-secondary mt-2" id="limparAssinatura">Limpar Assinatura</button>
+</div>
+
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="concordoTermo" required>
+                            <label class="form-check-label" for="concordoTermo">
+                                Declaro que li e concordo com os termos acima
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmarTermo">
+                        <i class="bi bi-check-circle me-1"></i>Confirmar e Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Função para exibir a imagem no modal
-function showImageModal(imageUrl, title) {
-    document.getElementById('modalImage').src = imageUrl;
-    document.getElementById('imageModalLabel').textContent = title;
-    var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-    imageModal.show();
-}
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signatureCanvas');
+    if (!canvas) return;
 
-// Inicializar tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        const width = container.offsetWidth;
+        const height = 150;
+        const scale = window.devicePixelRatio || 1;
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(scale, scale);
+        ctx.drawImage(tempCanvas, 0, 0);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+    }
+
+    function getPosition(e) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX = 0, clientY = 0;
+
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const x = (clientX - rect.left) * (canvas.width / rect.width);
+        const y = (clientY - rect.top) * (canvas.height / rect.height);
+        return [x, y];
+    }
+
+    function initCanvasEvents() {
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            [lastX, lastY] = getPosition(e);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const [x, y] = getPosition(e);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            [lastX, lastY] = [x, y];
+        });
+
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+
+        canvas.addEventListener('touchstart', (e) => {
+            isDrawing = true;
+            [lastX, lastY] = getPosition(e);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDrawing) return;
+            const [x, y] = getPosition(e);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            [lastX, lastY] = [x, y];
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => isDrawing = false);
+    }
+
+    document.getElementById('limparAssinatura')?.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
     });
-    
-    // Focar no campo de busca quando o modal é aberto
-    document.getElementById('buscarAgendamentoModal').addEventListener('shown.bs.modal', function () {
-        document.getElementById('numero_agendamento').focus();
+
+    window.isCanvasBlank = function () {
+        const blank = document.createElement('canvas');
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        return canvas.toDataURL() === blank.toDataURL();
+    };
+
+    // Detecta se o canvas ficou visível (ex: quando o modal abrir)
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                resizeCanvas();
+                initCanvasEvents();
+            }
+        });
     });
+    observer.observe(canvas);
+
+    // Também garante redimensionamento na janela
+    window.addEventListener('resize', resizeCanvas);
 });
 </script>
 {% endblock %}
