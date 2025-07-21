@@ -416,16 +416,21 @@ def agendar_view(request):
 
 def buscar_pecas_com_certificado(request):
     q = request.GET.get('q', '').strip()
+    data_atual = now()
 
-    # IDs dos equipamentos já agendados
-    pecas_agendadas_ids = list(PecaAgendada.objects.values_list('equipamento_id', flat=True))
+    # 1. Buscar IDs de equipamentos agendados e que ainda NÃO foram retirados
+    agendamentos_ativos = Agendamento.objects.filter(status__in=['AGENDADO'])
+    pecas_em_uso_ids = PecaAgendada.objects.filter(
+        agendamento__in=agendamentos_ativos
+    ).values_list('equipamento_id', flat=True)
 
-    # Buscar equipamentos com certificado válido e que NÃO estão agendados
+    # 2. Buscar equipamentos com certificação válida E que não estão agendados ativamente
     equipamentos_disponiveis = Equipamento.objects.filter(
         Q(equipamento__icontains=q) | Q(identificador__icontains=q),
-        certificacoes__data_vencimento__gte=now()
-    ).exclude(pk__in=pecas_agendadas_ids).distinct()
+        certificacoes__data_vencimento__gte=data_atual
+    ).exclude(pk__in=pecas_em_uso_ids).distinct()
 
+    # 3. Preparar os dados de resposta
     dados = []
     for p in equipamentos_disponiveis:
         cert = p.certificacoes.order_by('-data_vencimento').first()
@@ -438,6 +443,7 @@ def buscar_pecas_com_certificado(request):
         })
 
     return JsonResponse({'resultados': dados})
+
 
 
 
