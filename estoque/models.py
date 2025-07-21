@@ -193,11 +193,7 @@ class SaidaMaterial(models.Model):
         on_delete=models.PROTECT,
         related_name='saida_material'
     )
-    responsavel_entrega = models.ForeignKey(
-        'Colaborador',
-        on_delete=models.PROTECT,
-        related_name='entregas_realizadas'
-    )
+    # Remova o campo responsavel_entrega pois usaremos os dados do agendamento
     data_registro = models.DateTimeField(auto_now_add=True)
     observacoes = models.TextField(blank=True)
     termo_assinado = models.FileField(
@@ -205,6 +201,14 @@ class SaidaMaterial(models.Model):
         null=True,
         blank=True
     )
+
+    @property
+    def nome_responsavel(self):
+        return self.agendamento.nome_solicitante
+
+    @property
+    def matricula_responsavel(self):
+        return self.agendamento.matricula
 
     class Meta:
         verbose_name = 'Saída de Material'

@@ -383,11 +383,11 @@ def agendar_view(request):
                     return JsonResponse({
                         'success': True,
                         'numero_agendamento': agendamento.numero_agendamento,
-                        'redirect_url': reverse('sucesso_agendamento', kwargs={'numero': agendamento.numero_agendamento})
+                        'redirect_url': reverse('lista_agendamento')  # Alterado aqui
                     })
 
                 # Redirecionamento tradicional
-                return redirect('sucesso_agendamento', numero=agendamento.numero_agendamento)
+                return redirect('lista_agendamento')  # Alterado aqui
 
             except Exception as e:
                 # Tratamento de erros para AJAX
@@ -464,11 +464,36 @@ def verificar_agendamentos_equipamento(request, pk):
         'agendamentos': agendamentos
     }, encoder=DjangoJSONEncoder)
     
-    
 @login_required
 def lista_agendamento_view(request):
     agendamentos = Agendamento.objects.all().order_by('-data_hora_agendamento')
-    return render(request, 'estoque/lista_agendamento.html', {'agendamentos': agendamentos})
+    
+    # Filtro por busca
+    busca = request.GET.get('busca', '')
+    if busca:
+        agendamentos = agendamentos.filter(
+            Q(numero_agendamento__icontains=busca) |
+            Q(nome_solicitante__icontains=busca) |
+            Q(matricula__icontains=busca) |
+            Q(setor_solicitante__icontains=busca)
+        )
+    
+    # Filtro por status
+    status_filtro = request.GET.getlist('status')
+    if status_filtro:
+        agendamentos = agendamentos.filter(status__in=status_filtro)
+    
+    # Paginação
+    paginator = Paginator(agendamentos, 10)  # 10 itens por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'estoque/lista_agendamento.html', {
+        'page_obj': page_obj,
+        'busca': busca,
+        'status_filtro': status_filtro,
+        'STATUS_CHOICES': Agendamento.STATUS_CHOICES
+    })
 
 @login_required
 def agendamento_detalhe(request, pk):
@@ -530,8 +555,6 @@ def excluir_agendamento(request, pk):
     return render(request, 'estoque/agendamento_excluir.html', {'agendamento': agendamento})
 
 
-
-# views.py
 @login_required
 def saida_material(request):
     agendamento = None
@@ -550,19 +573,32 @@ def saida_material(request):
             agendamento_id = request.POST.get('agendamento_id')
             agendamento = get_object_or_404(Agendamento, pk=agendamento_id)
             
-            # Verificar se já existe saída para este agendamento
             if SaidaMaterial.objects.filter(agendamento=agendamento).exists():
                 messages.error(request, 'Já existe uma saída registrada para este agendamento!')
             else:
-                # Criar registro de saída
-                SaidaMaterial.objects.create(
+                # Criar registro de saída usando dados do agendamento
+                saida = SaidaMaterial.objects.create(
                     agendamento=agendamento,
-                    responsavel_entrega=request.user.colaborador,
                     observacoes=request.POST.get('observacoes', '')
                 )
-                
+
+                # Criar checklist
+                ChecklistSaida.objects.create(
+                    saida=saida,
+                    alguma_avaria='alguma_avaria' in request.POST,
+                    validade_ok='validade_ok' in request.POST,
+                    certificacao_ok='certificacao_ok' in request.POST,
+                )
+
+                # Criar termo de retirada
+                TermoRetirada.objects.create(
+                    saida=saida,
+                    lido=True,
+                    assinatura_base64=request.POST.get('assinatura_base64', '')
+                )
+
                 # Atualizar status do agendamento
-                agendamento.status = 'RT'  # Retirado
+                agendamento.status = 'RT'
                 agendamento.save()
                 
                 # Atualizar estoque
@@ -571,48 +607,37 @@ def saida_material(request):
                     peca.equipamento.save()
                 
                 messages.success(request, 'Saída registrada com sucesso!')
-                return redirect('detalhe_saida', agendamento_id=agendamento.id)
-            
-            # Registrar saída
-        elif 'registrar_saida' in request.POST:
-            agendamento_id = request.POST.get('agendamento_id')
-            agendamento = get_object_or_404(Agendamento, pk=agendamento_id)
-
-            if SaidaMaterial.objects.filter(agendamento=agendamento).exists():
-                messages.error(request, 'Já existe uma saída registrada para este agendamento!')
-            else:
-                saida = SaidaMaterial.objects.create(
-                    agendamento=agendamento,
-                    responsavel_entrega=request.user.colaborador,
-                    observacoes=request.POST.get('observacoes', '')
-                )
-
-                ChecklistSaida.objects.create(
-                    saida=saida,
-                    alguma_avaria='alguma_avaria' in request.POST,
-                    validade_ok='validade_ok' in request.POST,
-                    certificacao_ok='certificacao_ok' in request.POST,
-                )
-
-                TermoRetirada.objects.create(
-                    saida=saida,
-                    lido='lido' in request.POST,
-                    assinatura_base64=request.POST.get('assinatura_base64', '')
-                )
-
-                agendamento.status = 'RT'
-                agendamento.save()
-
-                for peca in agendamento.pecas_agendadas.all():
-                    peca.equipamento.quantidade -= 1
-                    peca.equipamento.save()
-
-                messages.success(request, 'Saída registrada com sucesso!')
-                return redirect('detalhe_saida', agendamento_id=agendamento.id)
-
+                return redirect('lista_saidas')  # Removido o parâmetro agendamento_id
 
     return render(request, 'estoque/saida_material.html', {
-                'agendamento': agendamento
-            })
+        'agendamento': agendamento
+    })
     
     
+def lista_saidas(request):
+    saidas = SaidaMaterial.objects.select_related('agendamento').all().order_by('-data_registro')
+    return render(request, 'estoque/lista_saidas.html', {'saidas': saidas})
+
+def detalhe_saida(request, pk):
+    saida = get_object_or_404(SaidaMaterial.objects.select_related('agendamento'), pk=pk)
+    pecas = saida.agendamento.pecas_agendadas.select_related('equipamento').all()
+    return render(request, 'estoque/detalhe_saida.html', {
+        'saida': saida,
+        'pecas': pecas
+    })
+
+def editar_saida(request, pk):
+    saida = get_object_or_404(SaidaMaterial, pk=pk)
+    if request.method == 'POST':
+        # Lógica para edição aqui
+        messages.success(request, 'Saída atualizada com sucesso!')
+        return redirect('detalhe_saida', pk=saida.pk)
+    return render(request, 'estoque/editar_saida.html', {'saida': saida})
+
+def excluir_saida(request, pk):
+    saida = get_object_or_404(SaidaMaterial, pk=pk)
+    if request.method == 'POST':
+        saida.delete()
+        messages.success(request, 'Saída excluída com sucesso!')
+        return redirect('lista_saidas')
+    return render(request, 'estoque/confirmar_exclusao.html', {'saida': saida})

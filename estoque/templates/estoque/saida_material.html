@@ -349,6 +349,9 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // =============================================
+    // Configuração do Canvas de Assinatura
+    // =============================================
     const canvas = document.getElementById('signatureCanvas');
     if (!canvas) return;
 
@@ -367,26 +370,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Redimensiona o canvas mantendo a escala
     function resizeCanvas() {
-    const container = canvas.parentElement;
-    const width = container.offsetWidth;
-    const height = 150;
-    const scale = window.devicePixelRatio || 1;
+        const container = canvas.parentElement;
+        const width = container.offsetWidth;
+        const height = 150;
+        const scale = window.devicePixelRatio || 1;
 
-    if (width === 0 || height === 0) return; // evita erro se o modal estiver oculto
+        if (width === 0 || height === 0) return; // evita erro se o modal estiver oculto
 
-    canvas.width = width * scale;
-    canvas.height = height * scale;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(scale, scale);
-    initStyle();
-}
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(scale, scale);
+        initStyle();
+    }
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    // Função para obter posição correta considerando touch e mouse
     function getPosition(e) {
         const rect = canvas.getBoundingClientRect();
         let clientX, clientY;
@@ -404,6 +408,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return [x, y];
     }
+
+    // =============================================
+    // Eventos de Desenho (Mouse e Touch)
+    // =============================================
 
     // Desenho com mouse
     canvas.addEventListener('mousedown', (e) => {
@@ -446,7 +454,9 @@ document.addEventListener('DOMContentLoaded', function () {
     canvas.addEventListener('touchend', () => isDrawing = false);
     canvas.addEventListener('touchcancel', () => isDrawing = false);
 
-    // Botão limpar
+    // =============================================
+    // Botão Limpar Assinatura
+    // =============================================
     const limparBtn = document.getElementById('limparAssinatura');
     if (limparBtn) {
         limparBtn.addEventListener('click', () => {
@@ -455,20 +465,81 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Exporta base64 antes de enviar
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            const assinaturaBase64Input = document.getElementById('id_assinatura_base64');
-            if (assinaturaBase64Input) {
-                assinaturaBase64Input.value = canvas.toDataURL();
+    // =============================================
+    // Botão Confirmar e Fechar
+    // =============================================
+    const confirmarTermoBtn = document.getElementById('confirmarTermo');
+    if (confirmarTermoBtn) {
+        confirmarTermoBtn.addEventListener('click', function() {
+            const concordoCheckbox = document.getElementById('concordoTermo');
+            
+            // Validação do checkbox
+            if (!concordoCheckbox?.checked) {
+                alert('Por favor, marque a opção "Declaro que li e concordo com os termos acima"');
+                return;
+            }
+            
+            // Validação da assinatura
+            if (isCanvasBlank(canvas)) {
+                alert('Por favor, forneça sua assinatura digital');
+                return;
+            }
+            
+            // Fechar o modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('termoResponsabilidadeModal'));
+            modal.hide();
+            
+            // Adicionar a assinatura ao formulário principal
+            const form = document.querySelector('form');
+            if (form) {
+                // Remove input existente se houver
+                const existingInput = document.getElementById('assinaturaBase64Input');
+                if (existingInput) {
+                    existingInput.remove();
+                }
+                
+                // Cria novo input com a assinatura
+                const assinaturaInput = document.createElement('input');
+                assinaturaInput.type = 'hidden';
+                assinaturaInput.name = 'assinatura_base64';
+                assinaturaInput.id = 'assinaturaBase64Input';
+                assinaturaInput.value = canvas.toDataURL();
+                form.appendChild(assinaturaInput);
             }
         });
     }
 
+    // =============================================
+    // Funções Auxiliares
+    // =============================================
+
+    // Função para verificar se o canvas está em branco
+    function isCanvasBlank(canvas) {
+        const blank = document.createElement('canvas');
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        return canvas.toDataURL() === blank.toDataURL();
+    }
+
+    // Inicializa os estilos
     initStyle();
+
+    // =============================================
+    // Configuração do Formulário Principal
+    // =============================================
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            // Verifica se há assinatura quando o formulário for enviado
+            if (!document.getElementById('assinaturaBase64Input') && !isCanvasBlank(canvas)) {
+                const assinaturaInput = document.createElement('input');
+                assinaturaInput.type = 'hidden';
+                assinaturaInput.name = 'assinatura_base64';
+                assinaturaInput.value = canvas.toDataURL();
+                form.appendChild(assinaturaInput);
+            }
+        });
+    }
 });
 </script>
-
 {% endblock %}
-
