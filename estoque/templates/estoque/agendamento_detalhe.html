@@ -1,42 +1,140 @@
 {% extends 'base/base_dashboard.html' %}
+{% load static %}
+
 {% block title %}Detalhes do Agendamento{% endblock %}
 
 {% block content %}
-<div class="container my-4">
-  <h4 class="mb-3">Detalhes do Agendamento nº {{ agendamento.numero_agendamento }}</h4>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-calendar-check me-2 text-primary"></i>
+            Detalhes do Agendamento #{{ agendamento.numero_agendamento }}
+        </h2>
+        <div class="btn-group" role="group">
+            <a href="{% url 'lista_agendamento' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
 
-  <ul class="list-group mb-4">
-    <li class="list-group-item"><strong>Solicitante:</strong> {{ agendamento.nome_solicitante }}</li>
-    <li class="list-group-item"><strong>Matrícula:</strong> {{ agendamento.matricula }}</li>
-    <li class="list-group-item"><strong>Data/Hora:</strong> {{ agendamento.data_hora_agendamento|date:"d/m/Y H:i" }}</li>
-    <li class="list-group-item"><strong>Setor:</strong> {{ agendamento.setor_solicitante }}</li>
-    <li class="list-group-item"><strong>Local de Uso:</strong> {{ agendamento.local_uso }}</li>
-    <li class="list-group-item"><strong>Tipo de Operação:</strong> {{ agendamento.tipo_operacao }}</li>
-  </ul>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100 border-primary shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-badge me-2"></i>
+                        Informações do Solicitante
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-1">Nome:</h6>
+                            <p class="mb-3">{{ agendamento.nome_solicitante }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-1">Matrícula:</h6>
+                            <p class="mb-3">{{ agendamento.matricula }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-1">Setor:</h6>
+                            <p class="mb-3">{{ agendamento.get_setor_solicitante_display }}</p>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <h6 class="text-muted mb-1">Data/Hora do Agendamento:</h6>
+                            <p class="mb-0">{{ agendamento.data_hora_agendamento|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <h5>Peças Agendadas:</h5>
-  <table class="table table-bordered text-center">
-    <thead class="table-light">
-      <tr>
-        <th>Imagem</th>
-        <th>Nome</th>
-        <th>Identificador</th>
-        <th>Validade</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in pecas %}
-      <tr>
-        <td><img src="{{ item.equipamento.foto.url }}" width="40" height="40" class="rounded"></td>
-        <td>{{ item.equipamento.equipamento }}</td>
-        <td>{{ item.equipamento.identificador }}</td>
-        <td>{{ item.equipamento.certificacoes.first.data_vencimento|date:"d/m/Y" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4">Nenhuma peça vinculada.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        <div class="col-md-6">
+            <div class="card h-100 border-primary shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        Informações de Uso
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Local de Uso:</h6>
+                        <p>{{ agendamento.local_uso }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Tipo de Operação:</h6>
+                        <p>{{ agendamento.tipo_operacao }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <a href="{% url 'lista_agendamento' %}" class="btn btn-secondary mt-3">Voltar</a>
+    <div class="card border-primary shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-box-seam me-2"></i>
+                Peças Agendadas
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="50px" class="text-center">#</th>
+                            <th>Imagem</th>
+                            <th>Peça/Equipamento</th>
+                            <th>Identificador</th>
+                            <th>Validade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pecas %}
+                        <tr>
+                            <td class="text-center align-middle">{{ forloop.counter }}</td>
+                            <td class="align-middle">
+                                <img src="{{ item.equipamento.foto.url }}" width="40" height="40" class="rounded">
+                            </td>
+                            <td class="align-middle">
+                                <strong>{{ item.equipamento.equipamento }}</strong>
+                            </td>
+                            <td class="align-middle">
+                                <span class="badge bg-primary">{{ item.equipamento.identificador }}</span>
+                            </td>
+                            <td class="text-center align-middle">
+                                {% with item.equipamento.certificacoes.first as certificacao %}
+                                {% if certificacao and certificacao.data_vencimento %}
+                                    {% if certificacao.data_vencimento < now %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                        {{ certificacao.data_vencimento|date:"d/m/Y" }}
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle-fill me-1"></i>
+                                        {{ certificacao.data_vencimento|date:"d/m/Y" }}
+                                    </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-question-circle-fill me-1"></i>
+                                        Sem validade
+                                    </span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">Nenhuma peça vinculada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

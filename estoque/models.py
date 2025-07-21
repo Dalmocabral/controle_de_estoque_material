@@ -266,4 +266,35 @@ class TermoRetirada(models.Model):
     def __str__(self):
         return f"Termo da Saída #{self.saida.id}"
 
-  
+
+# models.py
+class DevolucaoMaterial(models.Model):
+    saida = models.OneToOneField(
+        SaidaMaterial,
+        on_delete=models.PROTECT,
+        related_name='devolucao'
+    )
+    data_devolucao = models.DateTimeField(auto_now_add=True)
+    quantidade_devolvida = models.BooleanField(default=True, verbose_name="Quantidade devolvida completa")
+    material_com_avaria = models.BooleanField(default=False, verbose_name="Material com avaria")
+    observacoes = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = 'Devolução de Material'
+        verbose_name_plural = 'Devoluções de Materiais'
+        ordering = ['-data_devolucao']
+
+    def __str__(self):
+        return f"Devolução #{self.id} - Agendamento {self.saida.agendamento.numero_agendamento}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Atualiza o status do agendamento para "Devolvido"
+        self.saida.agendamento.status = 'DV'
+        self.saida.agendamento.save()
+        
+        # Atualiza o estoque dos equipamentos
+        if self.quantidade_devolvida:
+            for peca in self.saida.agendamento.pecas_agendadas.all():
+                peca.equipamento.quantidade += 1
+                peca.equipamento.save()

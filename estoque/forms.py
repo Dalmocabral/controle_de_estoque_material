@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada, ChecklistSaida, TermoRetirada
+from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada, ChecklistSaida, TermoRetirada, DevolucaoMaterial
 from django.forms import inlineformset_factory
 from django.core.validators import validate_email
 import re
@@ -189,4 +189,13 @@ class TermoRetiradaForm(forms.ModelForm):
         widgets = {
             'lido': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'assinatura_base64': forms.HiddenInput(),
+        }
+        
+        
+class DevolucaoMaterialForm(forms.ModelForm):
+    class Meta:
+        model = DevolucaoMaterial
+        fields = ['quantidade_devolvida', 'material_com_avaria', 'observacoes']
+        widgets = {
+            'observacoes': forms.Textarea(attrs={'rows': 3}),
         }

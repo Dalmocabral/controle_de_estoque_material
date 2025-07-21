@@ -45,6 +45,7 @@ urlpatterns = [
     path('dashboard/movimentacoes/saidas/detalhe/<int:pk>/', views.detalhe_saida, name='detalhe_saida'),
     path('dashboard/movimentacoes/saidas/editar/<int:pk>/', views.editar_saida, name='editar_saida'),
     path('dashboard/movimentacoes/saidas/excluir/<int:pk>/', views.excluir_saida, name='excluir_saida'),
+    path('dashboard/movimentacoes/devolucao/', views.devolucao_material, name='devolucao_material'),
     
     # ====================== APIs E ENDPOINTS AUXILIARES ======================
     path('api/buscar-pecas/', views.buscar_pecas_com_certificado, name='buscar_pecas_com_certificado'),

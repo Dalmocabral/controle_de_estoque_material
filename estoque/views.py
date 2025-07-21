@@ -27,8 +27,8 @@ from django.db import transaction
 from django.db import IntegrityError
 
 # Local Apps
-from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm
-from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca, ChecklistSaida, TermoRetirada
+from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm, DevolucaoMaterialForm
+from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca, ChecklistSaida, TermoRetirada, DevolucaoMaterial
 
 
 class CustomLoginView(LoginView):
@@ -615,8 +615,15 @@ def saida_material(request):
     
     
 def lista_saidas(request):
-    saidas = SaidaMaterial.objects.select_related('agendamento').all().order_by('-data_registro')
-    return render(request, 'estoque/lista_saidas.html', {'saidas': saidas})
+    saidas = SaidaMaterial.objects.select_related(
+        'agendamento', 'devolucao'
+    ).all().order_by('-data_registro')
+    
+    return render(request, 'estoque/lista_saidas.html', {
+        'saidas': saidas,
+        'STATUS_CHOICES': Agendamento.STATUS_CHOICES
+    })
+
 
 def detalhe_saida(request, pk):
     saida = get_object_or_404(SaidaMaterial.objects.select_related('agendamento'), pk=pk)
@@ -641,3 +648,53 @@ def excluir_saida(request, pk):
         messages.success(request, 'Saída excluída com sucesso!')
         return redirect('lista_saidas')
     return render(request, 'estoque/confirmar_exclusao.html', {'saida': saida})
+
+
+
+def devolucao_material(request):
+    agendamento = None
+    saida = None
+    pecas = None
+    checklist = None
+    
+    if request.method == 'POST':
+        # Buscar agendamento
+        if 'buscar_agendamento' in request.POST:
+            numero_agendamento = request.POST.get('numero_agendamento')
+            try:
+                agendamento = Agendamento.objects.get(
+                    Q(numero_agendamento=numero_agendamento) & 
+                    Q(status='RT')  # Só permite devolver agendamentos com status Retirado
+                )
+                saida = agendamento.saida_material
+                pecas = agendamento.pecas_agendadas.select_related('equipamento').all()
+                checklist = saida.checklist
+            except Agendamento.DoesNotExist:
+                messages.error(request, 'Agendamento não encontrado ou já devolvido!')
+        
+        # Registrar devolução
+        elif 'registrar_devolucao' in request.POST:
+            form = DevolucaoMaterialForm(request.POST)
+            if form.is_valid():
+                saida_id = request.POST.get('saida_id')
+                saida = get_object_or_404(SaidaMaterial, pk=saida_id)
+                
+                if hasattr(saida, 'devolucao'):
+                    messages.error(request, 'Esta saída já foi devolvida!')
+                else:
+                    devolucao = form.save(commit=False)
+                    devolucao.saida = saida
+                    devolucao.save()
+                    
+                    messages.success(request, 'Devolução registrada com sucesso!')
+                    return redirect('lista_saidas')
+            else:
+                messages.error(request, 'Por favor, corrija os erros abaixo.')
+    
+    return render(request, 'estoque/devolucao_material.html', {
+        'agendamento': agendamento,
+        'saida': saida,
+        'pecas': pecas,
+        'checklist': checklist,
+        'form': DevolucaoMaterialForm()
+    })

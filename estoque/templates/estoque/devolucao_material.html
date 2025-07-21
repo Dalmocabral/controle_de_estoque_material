@@ -1,0 +1,210 @@
+<!-- templates/estoque/devolucao_material.html -->
+{% extends 'base/base_dashboard.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-box-arrow-in-down me-2 text-primary"></i>
+            Devolução de Materiais
+        </h2>
+    </div>
+
+    <div class="card border-primary shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-search me-2"></i>
+                Buscar Agendamento para Devolução
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-8">
+                        <label for="numero_agendamento" class="form-label">Número do Agendamento</label>
+                        <input type="text" class="form-control" id="numero_agendamento" 
+                               name="numero_agendamento" required>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" name="buscar_agendamento" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if saida %}
+    <div class="card border-primary shadow-lg mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-card-checklist me-2"></i>
+                Informações da Saída - Agendamento #{{ agendamento.numero_agendamento }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Informações do Agendamento -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Solicitante:</h6>
+                        <p>{{ agendamento.nome_solicitante }} ({{ agendamento.matricula }})</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Setor:</h6>
+                        <p>{{ agendamento.get_setor_solicitante_display }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Data/Hora da Retirada:</h6>
+                        <p>{{ saida.data_registro|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-1">Local de Uso:</h6>
+                        <p>{{ agendamento.local_uso }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Peças Retiradas (somente leitura) -->
+            <div class="card border-primary shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam me-2"></i>Peças Retiradas
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="50px" class="text-center">#</th>
+                                    <th>Imagem</th>
+                                    <th>Equipamento</th>
+                                    <th>Identificador</th>
+                                    <th>Status na Saída</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for peca in pecas %}
+                                <tr>
+                                    <td class="text-center align-middle">{{ forloop.counter }}</td>
+                                    <td class="align-middle">
+                                        <img src="{{ peca.equipamento.foto.url }}" 
+                                             width="40" height="40" 
+                                             class="rounded" 
+                                             alt="{{ peca.equipamento.equipamento }}">
+                                    </td>
+                                    <td class="align-middle">{{ peca.equipamento.equipamento }}</td>
+                                    <td class="align-middle">
+                                        <span class="badge bg-primary">{{ peca.equipamento.identificador }}</span>
+                                    </td>
+                                    <td class="align-middle">
+                                        {% with peca.verificacoes.first as verificacao %}
+                                            {% if verificacao %}
+                                                {% if verificacao.tem_avaria %}
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Com avaria
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>OK
+                                                </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-question-circle-fill me-1"></i>Não verificado
+                                                </span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checklist de Saída (somente leitura) -->
+            <div class="card border-primary shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check2-square me-2"></i>Checklist de Saída
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" disabled 
+                               {% if checklist.alguma_avaria %}checked{% endif %}>
+                        <label class="form-check-label">Alguma peça apresentava avaria</label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" disabled 
+                               {% if checklist.validade_ok %}checked{% endif %}>
+                        <label class="form-check-label">Todas as peças estavam dentro da validade</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" disabled 
+                               {% if checklist.certificacao_ok %}checked{% endif %}>
+                        <label class="form-check-label">Todas as peças possuíam certificação válida</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulário de Devolução -->
+            <div class="card border-primary shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-check me-2"></i>Checklist de Devolução
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="saida_id" value="{{ saida.id }}">
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.quantidade_devolvida }}
+                                <label class="form-check-label" for="{{ form.quantidade_devolvida.id_for_label }}">
+                                    A quantidade total de material foi devolvida
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.material_com_avaria }}
+                                <label class="form-check-label" for="{{ form.material_com_avaria.id_for_label }}">
+                                    Material se encontra com alguma avaria
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                                <i class="bi bi-chat-left-text me-1"></i>Observações:
+                            </label>
+                            {{ form.observacoes|add_class:"form-control" }}
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" name="registrar_devolucao" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Confirmar Devolução
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

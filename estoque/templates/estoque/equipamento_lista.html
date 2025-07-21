@@ -1,162 +1,217 @@
 {% extends 'base/base_dashboard.html' %}
+{% load static %}
+
 {% block title %}Lista de Equipamentos{% endblock %}
 
 {% block content %}
-<div class="container my-4">
-  <h4 class="mb-3">Equipamentos Cadastrados</h4>
-
-  <form method="get" class="row g-3 mb-4">
-    <div class="col-md-4">
-      <input type="text" name="q" value="{{ busca }}" class="form-control" placeholder="Buscar por equipamento, identificador ou registro">
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-tools me-2 text-primary"></i>
+            Equipamentos Cadastrados
+        </h2>
+        
     </div>
-    <div class="col-auto">
-      <button class="btn btn-primary" type="submit">Buscar</button>
-      <a href="{% url 'listar_equipamentos' %}" class="btn btn-outline-secondary">Limpar</a>
+
+    <div class="card border-primary shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-search me-2"></i>
+                Buscar Equipamentos
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label for="busca" class="form-label">Termo de busca</label>
+                    <input type="text" name="q" value="{{ busca }}" class="form-control" 
+                           placeholder="Buscar por equipamento, identificador ou registro">
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-3">
+                        <button class="btn btn-primary px-4" type="submit">
+                            <i class="bi bi-search me-2"></i>Buscar
+                        </button>
+                        <a href="{% url 'listar_equipamentos' %}" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-arrow-counterclockwise me-2"></i>Limpar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
-  </form>
 
-  <div class="table-responsive">
-    <table class="table table-hover align-middle table-bordered">
-      <thead class="table-light text-center">
-        <tr>
-          <th>Imagem</th>
-          <th>Equipamento</th>
-          <th>Identificador</th>
-          <th>Registro</th>
-          <th>Quantidade</th>
-          <th>Localização</th>
-          <th>QR Code</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for equipamento in equipamentos %}
-          <tr class="text-center">
-            <td>
-              {% if equipamento.foto %}
-                <img src="{{ equipamento.foto.url }}" class="img-thumbnail" width="60">
-              {% else %}
-                <span class="text-muted">Sem imagem</span>
-              {% endif %}
-            </td>
-            <td>{{ equipamento.equipamento }}</td>
-            <td>{{ equipamento.identificador }}</td>
-            <td>{{ equipamento.registro }}</td>
-            <td>{{ equipamento.quantidade }}</td>
-            <td>{{ equipamento.localizacao }}</td>
-            <td>
-              {% if equipamento.qrcode %}
-                <img src="{{ equipamento.qrcode.url }}" width="50">
-              {% else %}
-                <span class="text-muted">Não gerado</span>
-              {% endif %}
-            </td>
-            <td>
-              <div class="btn-group" role="group">
-                <a href="{% url 'detalhe_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a href="{% url 'editar_equipamento' equipamento.pk %}" class="btn btn-sm btn-outline-warning">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <button class="btn btn-sm btn-outline-danger delete-btn" 
-                        data-equipamento-id="{{ equipamento.pk }}"
-                        data-equipamento-name="{{ equipamento.equipamento }}"
-                        data-delete-url="{% url 'excluir_equipamento' equipamento.pk %}">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="8" class="text-center text-muted">Nenhum equipamento encontrado.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+    <div class="card border-primary shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="60px" class="text-center">Imagem</th>
+                            <th>Equipamento</th>
+                            <th>Identificador</th>
+                            <th>Registro</th>
+                            <th class="text-center">Quantidade</th>
+                            <th>Localização</th>
+                            <th class="text-center">QR Code</th>
+                            <th width="200px" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipamento in equipamentos %}
+                        <tr>
+                            <td class="text-center align-middle">
+                                {% if equipamento.foto %}
+                                <img src="{{ equipamento.foto.url }}" class="rounded" width="40" height="40">
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">{{ equipamento.equipamento }}</td>
+                            <td class="align-middle">
+                                <span class="badge bg-primary">{{ equipamento.identificador }}</span>
+                            </td>
+                            <td class="align-middle">{{ equipamento.registro }}</td>
+                            <td class="text-center align-middle">{{ equipamento.quantidade }}</td>
+                            <td class="align-middle">{{ equipamento.localizacao }}</td>
+                            <td class="text-center align-middle">
+                                {% if equipamento.qrcode %}
+                                <img src="{{ equipamento.qrcode.url }}" width="40">
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{% url 'detalhe_equipamento' equipamento.pk %}" 
+                                       class="btn btn-sm btn-outline-primary px-3"
+                                       data-bs-toggle="tooltip" title="Visualizar">
+                                        <i class="bi bi-eye me-1"></i>Ver
+                                    </a>
+                                    <a href="{% url 'editar_equipamento' equipamento.pk %}" 
+                                       class="btn btn-sm btn-outline-warning px-3"
+                                       data-bs-toggle="tooltip" title="Editar">
+                                        <i class="bi bi-pencil me-1"></i>Editar
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger px-3 delete-btn" 
+                                            data-equipamento-id="{{ equipamento.pk }}"
+                                            data-equipamento-name="{{ equipamento.equipamento }}"
+                                            data-delete-url="{% url 'excluir_equipamento' equipamento.pk %}"
+                                            data-bs-toggle="tooltip" title="Excluir">
+                                        <i class="bi bi-trash me-1"></i>Excluir
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                Nenhum equipamento encontrado.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
-  <!-- Modal de Confirmação de Exclusão Simplificado -->
-  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalBodyContent">
+                <!-- Conteúdo será preenchido via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                </button>
+                <form id="deleteForm" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-4" id="confirmDeleteBtn">
+                        <i class="bi bi-trash me-2"></i>Excluir
+                    </button>
+                </form>
+            </div>
         </div>
-        <div class="modal-body" id="modalBodyContent">
-          <!-- Conteúdo será preenchido via JavaScript -->
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <form id="deleteForm" method="post" action="">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Excluir</button>
-          </form>
-        </div>
-      </div>
     </div>
-  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-  const modalBodyContent = document.getElementById('modalBodyContent');
-  const deleteForm = document.getElementById('deleteForm');
-  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-  
-  document.querySelectorAll('.delete-btn').forEach(button => {
-    button.addEventListener('click', function() {
-      const equipamentoId = this.getAttribute('data-equipamento-id');
-      const equipamentoName = this.getAttribute('data-equipamento-name');
-      const deleteUrl = this.getAttribute('data-delete-url');
-      
-      // Verifica se há agendamentos
-      fetch(`/api/equipamento/${equipamentoId}/verificar-agendamentos/`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.has_agendamentos) {
-            // Mostra mensagem de erro
-            modalBodyContent.innerHTML = `
-              <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
-              <div class="alert alert-warning">
-                <p>Este equipamento está vinculado a agendamentos e não pode ser excluído.</p>
-                <p>Para excluí-lo, primeiro remova-o dos agendamentos relacionados.</p>
-              </div>
-            `;
-            confirmDeleteBtn.classList.add('d-none');
-          } else {
-            // Mostra confirmação normal
-            modalBodyContent.innerHTML = `
-              <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
-            `;
-            confirmDeleteBtn.classList.remove('d-none');
-          }
-          
-          // Atualiza o título e o formulário
-          document.getElementById('confirmDeleteModalLabel').textContent = `Excluir ${equipamentoName}?`;
-          deleteForm.action = deleteUrl;
-          
-          // Mostra o modal
-          confirmDeleteModal.show();
-        })
-        .catch(error => {
-          console.error('Erro ao verificar agendamentos:', error);
-          // Fallback em caso de erro
-          modalBodyContent.innerHTML = `
-            <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
-            <div class="alert alert-danger">
-              Ocorreu um erro ao verificar os agendamentos. Tente novamente.
-            </div>
-          `;
-          confirmDeleteModal.show();
+    // Inicializa tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    const modalBodyContent = document.getElementById('modalBodyContent');
+    const deleteForm = document.getElementById('deleteForm');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const equipamentoId = this.getAttribute('data-equipamento-id');
+            const equipamentoName = this.getAttribute('data-equipamento-name');
+            const deleteUrl = this.getAttribute('data-delete-url');
+            
+            // Verifica se há agendamentos
+            fetch(`/api/equipamento/${equipamentoId}/verificar-agendamentos/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.has_agendamentos) {
+                        // Mostra mensagem de erro
+                        modalBodyContent.innerHTML = `
+                            <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                Este equipamento está vinculado a agendamentos e não pode ser excluído.
+                                <p class="mt-2 mb-0">Para excluí-lo, primeiro remova-o dos agendamentos relacionados.</p>
+                            </div>
+                        `;
+                        confirmDeleteBtn.classList.add('d-none');
+                    } else {
+                        // Mostra confirmação normal
+                        modalBodyContent.innerHTML = `
+                            <p>Tem certeza que deseja excluir permanentemente o equipamento <strong>${equipamentoName}</strong>?</p>
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                Esta ação não pode ser desfeita!
+                            </div>
+                        `;
+                        confirmDeleteBtn.classList.remove('d-none');
+                    }
+                    
+                    // Atualiza o título e o formulário
+                    document.getElementById('confirmDeleteModalLabel').textContent = `Excluir ${equipamentoName}?`;
+                    deleteForm.action = deleteUrl;
+                    
+                    // Mostra o modal
+                    confirmDeleteModal.show();
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar agendamentos:', error);
+                    // Fallback em caso de erro
+                    modalBodyContent.innerHTML = `
+                        <p>Tem certeza que deseja excluir o equipamento <strong>${equipamentoName}</strong>?</p>
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Ocorreu um erro ao verificar os agendamentos. Tente novamente.
+                        </div>
+                    `;
+                    confirmDeleteModal.show();
+                });
         });
     });
-  });
 });
 </script>
 {% endblock %}

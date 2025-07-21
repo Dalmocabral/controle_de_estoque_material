@@ -2,214 +2,160 @@
 {% block title %}Cadastrar Equipamento{% endblock %}
 
 {% block content %}
-<style>
-  /* Correções para problemas de modal - Bootstrap 5 */
-
-/* Garantir z-index correto para modais */
-.modal {
-  z-index: 1055 !important;
-}
-
-.modal-backdrop {
-  z-index: 1050 !important;
-}
-
-.modal-dialog {
-  z-index: 1060 !important;
-}
-
-/* Garantir que o conteúdo do modal seja clicável */
-.modal-content {
-  position: relative;
-  z-index: 1061 !important;
-  pointer-events: auto;
-}
-
-/* Prevenir conflitos com jQuery UI */
-.ui-autocomplete {
-  z-index: 1070 !important;
-}
-
-/* Garantir que o backdrop não interfira com cliques */
-.modal-backdrop.show {
-  opacity: 0.5;
-  pointer-events: auto;
-}
-
-/* Correção para elementos dentro do modal */
-.modal-body,
-.modal-header,
-.modal-footer {
-  position: relative;
-  z-index: 1062 !important;
-}
-
-/* Garantir que botões sejam clicáveis */
-.modal .btn {
-  position: relative;
-  z-index: 1063 !important;
-  pointer-events: auto;
-}
-
-/* Correção para inputs dentro do modal */
-.modal input,
-.modal textarea,
-.modal select {
-  position: relative;
-  z-index: 1063 !important;
-  pointer-events: auto;
-}
-
-/* Prevenir overflow issues */
-.modal-open {
-  overflow: hidden;
-}
-
-.modal-open .modal {
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-/* Garantir que o modal seja visível em dispositivos móveis */
-@media (max-width: 576px) {
-  .modal-dialog {
-    margin: 0.5rem;
-    max-width: calc(100% - 1rem);
-  }
-}
-
-/* Correção para animações do modal */
-.modal.fade .modal-dialog {
-  transition: transform 0.3s ease-out;
-  transform: translate(0, -50px);
-}
-
-.modal.show .modal-dialog {
-  transform: none;
-}
-
-/* Garantir que elementos de formulário funcionem */
-.modal .form-control:focus {
-  z-index: 1064 !important;
-  position: relative;
-}
-
-/* Correção para dropdowns dentro do modal */
-.modal .dropdown-menu {
-  z-index: 1065 !important;
-}
-</style>
-<div class="container my-4">
-  <h4>Cadastrar Novo Equipamento</h4>
-
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-success">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-
-  <form method="post" enctype="multipart/form-data" class="mt-4" id="equipamentoForm">
-    {% csrf_token %}
-    
-    <div class="row">
-      <h5>Informações do Equipamento</h5>
-      {% for field in form.visible_fields %}
-        {% if forloop.counter <= 8 %}
-          <div class="mb-3 col-md-6">
-            <label class="form-label">{{ field.label }}</label>
-            {{ field }}
-            {% if field.name == 'foto' %}
-              <div id="preview" class="mt-2"></div>
-            {% endif %}
-            {% if field.errors %}
-              <div class="text-danger small">{{ field.errors|striptags }}</div>
-            {% endif %}
-          </div>
-        {% endif %}
-      {% endfor %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-tools me-2 text-primary"></i>
+            Cadastrar Novo Equipamento
+        </h2>
     </div>
 
-    <button type="button" class="btn btn-outline-primary mb-3" id="btnAbrirCertificado">
-      + Adicionar Certificado
-    </button>
-
-    <div class="mt-3">
-      <h6>Certificados adicionados:</h6>
-      <ul id="certificadosLista" class="list-group"></ul>
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
     </div>
+    {% endif %}
 
-    <br><br>
-    <button type="submit" class="btn btn-success">Salvar</button>
-    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
-  </form>
+    <div class="card border-primary shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Informações do Equipamento
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="equipamentoForm">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    {% for field in form.visible_fields %}
+                    {% if forloop.counter <= 8 %}
+                    <div class="col-md-6">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.name == 'foto' %}
+                        <div id="preview" class="mt-2"></div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4">
+                    <button type="button" class="btn btn-outline-primary" id="btnAbrirCertificado">
+                        <i class="bi bi-file-earmark-plus me-2"></i>Adicionar Certificado
+                    </button>
+
+                    <div class="mt-3">
+                        <h6 class="d-flex align-items-center">
+                            <i class="bi bi-list-check me-2"></i>
+                            Certificados adicionados:
+                        </h6>
+                        <ul id="certificadosLista" class="list-group mt-2"></ul>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-3 mt-5">
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary px-4">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="bi bi-check-circle me-2"></i>Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- MODAL de QR Code -->
-<div class="modal fade" id="qrcodeModal" tabindex="-1" aria-labelledby="qrcodeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Equipamento cadastrado com sucesso!</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body text-center">
-        <p>Deseja imprimir o QR Code?</p>
-        <img src="{{ qr_code }}" alt="QR Code" class="img-fluid" width="200">
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-      </div>
+<div class="modal fade" id="qrcodeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Equipamento cadastrado com sucesso!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Deseja imprimir o QR Code?</p>
+                <img src="{{ qr_code }}" alt="QR Code" class="img-fluid" width="200">
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button class="btn btn-success px-4" onclick="window.print()">
+                    <i class="bi bi-printer me-2"></i>Imprimir
+                </button>
+                <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-2"></i>Fechar
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- MODAL DE CERTIFICADO -->
-<div class="modal fade" id="certificadoModal" tabindex="-1" aria-labelledby="certificadoModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="certificadoModalLabel">Adicionar Certificado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col-md-6 mb-2">
-            <label class="form-label">Nome</label>
-            <input type="text" class="form-control" id="cert_nome" required>
-          </div>
-          <div class="col-md-6 mb-2">
-            <label class="form-label">Empresa Certificadora</label>
-            <input type="text" class="form-control" id="cert_empresa" required>
-          </div>
-          <div class="col-md-6 mb-2">
-            <label class="form-label">Data Certificação</label>
-            <input type="date" class="form-control" id="cert_data">
-          </div>
-          <div class="col-md-6 mb-2">
-            <label class="form-label">Data Vencimento</label>
-            <input type="date" class="form-control" id="cert_vencimento">
-          </div>
-          <div class="col-md-6 mb-2">
-            <label class="form-label">Código</label>
-            <input type="text" class="form-control" id="cert_codigo">
-          </div>
-          <div class="col-md-6 mb-2">
-            <label class="form-label">Anexo (PDF)</label>
-            <input type="file" class="form-control" id="cert_anexo" accept=".pdf">
-          </div>
-          <div class="col-12 mb-2">
-            <label class="form-label">Detalhes</label>
-            <textarea class="form-control" id="cert_detalhes" rows="3"></textarea>
-          </div>
+<div class="modal fade" id="certificadoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-earmark-plus me-2"></i>
+                    Adicionar Certificado
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="cert_nome" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Empresa Certificadora</label>
+                        <input type="text" class="form-control" id="cert_empresa" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Data Certificação</label>
+                        <input type="date" class="form-control" id="cert_data">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Data Vencimento</label>
+                        <input type="date" class="form-control" id="cert_vencimento">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Código</label>
+                        <input type="text" class="form-control" id="cert_codigo">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Anexo (PDF)</label>
+                        <input type="file" class="form-control" id="cert_anexo" accept=".pdf">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Detalhes</label>
+                        <textarea class="form-control" id="cert_detalhes" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary px-4" id="btnAddCertificado">
+                    <i class="bi bi-plus-lg me-2"></i>Adicionar
+                </button>
+            </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="btnAddCertificado">Adicionar</button>
-      </div>
     </div>
-  </div>
 </div>
 {% endblock %}
 
