@@ -1,0 +1,41 @@
+{% extends 'base/base_dashboard.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Inventário - Peças Aguardando Validação</h2>
+
+  <table class="table table-striped mt-4">
+    <thead class="table-dark">
+      <tr>
+        <th>Equipamento</th>
+        <th>Identificador</th>
+        <th>Data Inventário</th>
+        <th>Status</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inventario in inventarios %}
+      <tr>
+        <td>{{ inventario.equipamento.equipamento }}</td>
+        <td>{{ inventario.equipamento.identificador }}</td>
+        <td>{{ inventario.data_inventario|date:"d/m/Y H:i" }}</td>
+        <td>
+          {% if inventario.validado %}
+            <span class="badge bg-success">Validado</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Aguardando</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'detalhe_inventario' inventario.id %}" class="btn btn-sm btn-primary">Detalhes</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="text-center">Nenhum inventário pendente encontrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

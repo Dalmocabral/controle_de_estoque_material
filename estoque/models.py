@@ -13,7 +13,7 @@ import uuid
 import random
 
 class Colaborador(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='colaborador')
     matricula = models.CharField(max_length=20, unique=True)
     nome = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
@@ -298,3 +298,24 @@ class DevolucaoMaterial(models.Model):
             for peca in self.saida.agendamento.pecas_agendadas.all():
                 peca.equipamento.quantidade += 1
                 peca.equipamento.save()
+                
+                
+                
+class InventarioEquipamento(models.Model):
+    # GARANTIR que este related_name exista. Ele permite usar `equipamento.inventarios`.
+    equipamento = models.ForeignKey(
+        Equipamento,
+        on_delete=models.CASCADE,
+        related_name='inventarios'  # <-- PONTO CRÍTICO 2
+    )
+    colaborador = models.ForeignKey(Colaborador, on_delete=models.CASCADE)
+    data_inventario = models.DateTimeField(auto_now_add=True)
+    quantidade = models.PositiveIntegerField() # Removido default=0 para ser obrigatório no form
+    descarte = models.BooleanField(default=False)
+    perda = models.BooleanField(default=False)
+    fora_validade = models.BooleanField(default=False)
+    observacao = models.TextField(blank=True)
+    # ... (resto dos seus campos de InventarioEquipamento)
+
+    def __str__(self):
+        return f"Inventário para {self.equipamento} por {self.colaborador.nome}"

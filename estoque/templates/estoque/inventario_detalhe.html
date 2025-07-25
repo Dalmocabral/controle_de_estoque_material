@@ -1,0 +1,29 @@
+{% extends 'base/base_dashboard.html' %}
+
+{% block title %}Detalhe do Inventário{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Detalhe do Inventário</h3>
+    <hr>
+    
+    <div class="row">
+        <div class="col-md-4">
+            {% if inventario.equipamento.foto %}
+                <img src="{{ inventario.equipamento.foto.url }}" class="img-fluid rounded">
+            {% else %}
+                <p class="text-muted">Sem imagem</p>
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <p><strong>Nome:</strong> {{ inventario.equipamento.equipamento }}</p>
+            <p><strong>Data do Inventário:</strong> {{ inventario.data_inventario|date:"d/m/Y H:i" }}</p>
+            <p><strong>Quantidade:</strong> {{ inventario.quantidade }}</p>
+            <p><strong>Descarte:</strong> {{ inventario.descarte|yesno:"Sim,Não" }}</p>
+            <p><strong>Perda:</strong> {{ inventario.perda|yesno:"Sim,Não" }}</p>
+            <p><strong>Fora da Validade:</strong> {{ inventario.fora_validade|yesno:"Sim,Não" }}</p>
+            <p><strong>Observações:</strong> {{ inventario.observacao|default:"Sem observações" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

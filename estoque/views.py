@@ -27,8 +27,8 @@ from django.db import transaction
 from django.db import IntegrityError
 
 # Local Apps
-from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm, DevolucaoMaterialForm
-from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca, ChecklistSaida, TermoRetirada, DevolucaoMaterial
+from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm, DevolucaoMaterialForm, InventarioForm
+from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca, ChecklistSaida, TermoRetirada, DevolucaoMaterial, InventarioEquipamento
 
 
 class CustomLoginView(LoginView):
@@ -340,13 +340,23 @@ def estoque_resumido(request):
 
 @login_required
 def estoque_detalhado(request, nome_equipamento):
-    equipamentos = Equipamento.objects.filter(equipamento=nome_equipamento)
-    return render(request, 'estoque/estoque_detalhado.html', {
+    """
+    View que exibe a lista de equipamentos detalhados e os modais de inventário.
+    """
+    equipamentos = Equipamento.objects.filter(equipamento=nome_equipamento).order_by('registro')
+    
+    # Criamos uma instância vazia do formulário para passar ao template,
+    # embora não seja estritamente necessário, pois o modal tem seus próprios campos.
+    form = InventarioForm()
+
+    context = {
         'nome_equipamento': nome_equipamento,
         'equipamentos': equipamentos,
-        'today': timezone.now().date()
-    })
-    
+        'today': timezone.now().date(),
+        'inventario_form': form, # Passando o form para o contexto
+    }
+    return render(request, 'estoque/estoque_detalhado.html', context)
+
 
 def autocomplete_equipamento(request):
     """Endpoint AJAX para autocompletar nomes de equipamentos"""
@@ -704,3 +714,53 @@ def devolucao_material(request):
         'checklist': checklist,
         'form': DevolucaoMaterialForm()
     })
+    
+@login_required
+def registrar_inventario(request, pk):
+    equipamento = get_object_or_404(Equipamento, pk=pk)
+    colaborador = Colaborador.objects.get(user=request.user)
+
+    if request.method == 'POST':
+        form = InventarioForm(request.POST)
+        print(request.POST)
+        if form.is_valid():
+            inventario = form.save(commit=False)
+            inventario.equipamento = equipamento
+            inventario.colaborador = colaborador
+            inventario.save()
+            return redirect('detalhe_equipamento', pk=equipamento.pk)
+        else:
+            print("Formulário inválido:", form.errors.as_json())
+
+    else:
+        form = InventarioForm()
+
+    return render(request, 'inventario/modal_form.html', {
+        'equipamento': equipamento,
+        'form': form
+    })
+    
+    
+    
+@login_required
+def inventario_problemas(request):
+    """
+    Exibe todos os registros de inventário que possuem problemas (descarte, perda ou fora da validade).
+    """
+    inventarios_com_problemas = InventarioEquipamento.objects.filter(
+        Q(descarte=True) | Q(perda=True) | Q(fora_validade=True)
+    ).select_related('equipamento').order_by('-data_inventario')
+
+    context = {
+        'inventarios': inventarios_com_problemas,
+    }
+    return render(request, 'estoque/inventario_problemas.html', context)
+
+
+@login_required
+def inventario_detalhe(request, pk):
+    """
+    Exibe os detalhes de um registro de inventário.
+    """
+    inventario = get_object_or_404(InventarioEquipamento, pk=pk)
+    return render(request, 'estoque/inventario_detalhe.html', {'inventario': inventario})

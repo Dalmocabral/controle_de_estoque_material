@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada, ChecklistSaida, TermoRetirada, DevolucaoMaterial
+from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada, ChecklistSaida, TermoRetirada, DevolucaoMaterial, InventarioEquipamento
 from django.forms import inlineformset_factory
 from django.core.validators import validate_email
 import re
@@ -198,4 +198,19 @@ class DevolucaoMaterialForm(forms.ModelForm):
         fields = ['quantidade_devolvida', 'material_com_avaria', 'observacoes']
         widgets = {
             'observacoes': forms.Textarea(attrs={'rows': 3}),
+        }
+    
+
+
+
+class InventarioForm(forms.ModelForm):
+    class Meta:
+        model = InventarioEquipamento
+        fields = ['quantidade', 'descarte', 'perda', 'fora_validade', 'observacao']
+        widgets = {
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
+            'descarte': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'perda': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'fora_validade': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

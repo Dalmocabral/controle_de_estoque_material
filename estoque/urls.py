@@ -51,4 +51,11 @@ urlpatterns = [
     path('api/buscar-pecas/', views.buscar_pecas_com_certificado, name='buscar_pecas_com_certificado'),
     path('api/equipamento/<int:pk>/verificar-agendamentos/', views.verificar_agendamentos_equipamento, name='verificar_agendamentos_equipamento'),
     path('autocomplete/equipamento/', views.autocomplete_equipamento, name='autocomplete_equipamento'),
+    path('dashboard/inventario/registrar/<int:pk>/', views.registrar_inventario, name='registrar_inventario'),
+    path('dashboard/inventario/problemas/', views.inventario_problemas, name='inventario_problemas'),
+    path('dashboard/inventario/detalhe/<int:pk>/', views.inventario_detalhe, name='inventario_detalhe'),
+
+    
+
+
 ]

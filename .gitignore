@@ -224,3 +224,7 @@ __marimo__/
 *.pdf
 =======
 >>>>>>> 0516d6e91d399d761e4ce3bb97d7a347905acaff
+
+
+# EXCEÇÃO: incluir imagens do static/img
+!static/img/**
