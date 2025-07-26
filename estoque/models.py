@@ -311,11 +311,18 @@ class InventarioEquipamento(models.Model):
     colaborador = models.ForeignKey(Colaborador, on_delete=models.CASCADE)
     data_inventario = models.DateTimeField(auto_now_add=True)
     quantidade = models.PositiveIntegerField() # Removido default=0 para ser obrigatório no form
-    descarte = models.BooleanField(default=False)
+    avaria = models.BooleanField(default=False)
     perda = models.BooleanField(default=False)
-    fora_validade = models.BooleanField(default=False)
+    nao_devolvido = models.BooleanField(default=False)
     observacao = models.TextField(blank=True)
     # ... (resto dos seus campos de InventarioEquipamento)
+    
+    def remover_do_estoque(self):
+        """Remove fisicamente o registro e ajusta o estoque"""
+        equipamento = self.equipamento
+        self.delete()
+        equipamento.quantidade = max(0, equipamento.quantidade - 1)
+        equipamento.save()
 
     def __str__(self):
         return f"Inventário para {self.equipamento} por {self.colaborador.nome}"

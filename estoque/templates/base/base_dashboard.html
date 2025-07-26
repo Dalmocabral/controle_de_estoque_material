@@ -240,8 +240,27 @@
             </ul>
           </div>        
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'inventario_problemas' %}"><i class="bi bi-box-seam"></i> Inventário</a>
-        </li>
+    <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#inventarioCollapse">
+        <i class="bi bi-box-seam"></i>
+        <span>Inventários</span>
+        <i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <div id="inventarioCollapse" class="collapse">
+        <ul class="nav nav-pills flex-column ms-3">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'inventario_problemas' %}">
+                    <i class="bi bi-list-ul"></i> Lista de Inventários
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-file-earmark-text"></i> Relatório de Inventário
+                </a>
+            </li>
+            
+        </ul>
+    </div>
+</li>
 
         <!-- Item Configuração com Submenu -->
         <li class="nav-item">

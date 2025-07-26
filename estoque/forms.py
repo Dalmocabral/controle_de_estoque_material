@@ -1,15 +1,24 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import Colaborador, Equipamento, Certificacao, Agendamento, PecaAgendada, ChecklistSaida, TermoRetirada, DevolucaoMaterial, InventarioEquipamento
+from django.contrib.auth.models import Group
 from django.forms import inlineformset_factory
 from django.core.validators import validate_email
 import re
 
 
+
 class ColaboradorForm(forms.ModelForm):
+    grupos = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.filter(name__in=['gestor', 'assistente-adm', 'assistente-basico']),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label='Grupos de Privilégio'
+    )
+
     class Meta:
         model = Colaborador
-        fields = ['matricula', 'nome', 'email', 'cpf', 'area', 'cargo']
+        fields = ['matricula', 'nome', 'email', 'cpf', 'area', 'cargo', 'grupos']
         widgets = {
             'nome': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -31,6 +40,19 @@ class ColaboradorForm(forms.ModelForm):
             'area': forms.Select(attrs={'class': 'form-select'}),
             'cargo': forms.Select(attrs={'class': 'form-select'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super(ColaboradorForm, self).__init__(*args, **kwargs)
+        
+        # Se o usuário for superusuário ou estiver nos grupos gestor/assistente-adm, mostra grupos
+        if user and (user.is_superuser or user.groups.filter(name__in=['gestor', 'assistente-adm']).exists()):
+            self.fields['grupos'].queryset = Group.objects.filter(
+                name__in=['gestor', 'assistente-adm', 'assistente-basico']
+            )
+        else:
+            if 'grupos' in self.fields:
+                del self.fields['grupos']
     
     def clean_nome(self):
         nome = self.cleaned_data.get('nome')
@@ -206,11 +228,11 @@ class DevolucaoMaterialForm(forms.ModelForm):
 class InventarioForm(forms.ModelForm):
     class Meta:
         model = InventarioEquipamento
-        fields = ['quantidade', 'descarte', 'perda', 'fora_validade', 'observacao']
+        fields = ['quantidade', 'avaria', 'perda', 'nao_devolvido', 'observacao']
         widgets = {
             'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'required': True}),
-            'descarte': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'avaria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'perda': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'fora_validade': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'nao_devolvido': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

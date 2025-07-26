@@ -54,6 +54,8 @@ urlpatterns = [
     path('dashboard/inventario/registrar/<int:pk>/', views.registrar_inventario, name='registrar_inventario'),
     path('dashboard/inventario/problemas/', views.inventario_problemas, name='inventario_problemas'),
     path('dashboard/inventario/detalhe/<int:pk>/', views.inventario_detalhe, name='inventario_detalhe'),
+    path('dashboard/inventario/<int:pk>/remover/', views.remover_peca_estoque, name='remover_peca_estoque'),
+    path('dashboard/inventario/<int:pk>/', views.inventario_detalhe, name='inventario_detalhe'),
 
     
 

@@ -9,7 +9,7 @@ import re
 
 # Django
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.db.models import Q, Sum, Max
@@ -52,20 +52,20 @@ def dashboard(request):
 # ==============================================
 # VIEWS PARA GESTÃO DE COLABORADORES
 # ==============================================
-
 @login_required
 def cadastrar_colaborador(request):
     """
     Cadastra novo colaborador e cria usuário associado.
-    Requer permissões de superusuário ou 'estoque.add_colaborador'.
+    Permite acesso a superusuários ou usuários nos grupos 'gestor' ou 'assistente-adm'
     """
     # Verificação de permissões
-    if not request.user.is_superuser and not request.user.has_perm('estoque.add_colaborador'):
+    if not (request.user.is_superuser or 
+            request.user.groups.filter(name__in=['gestor', 'assistente-adm']).exists()):
         messages.error(request, 'Você não tem permissão para acessar esta página.')
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = ColaboradorForm(request.POST)
+        form = ColaboradorForm(request.POST, user=request.user)
         if form.is_valid():
             try:
                 colaborador = form.save(commit=False)
@@ -84,6 +84,11 @@ def cadastrar_colaborador(request):
                     password=senha
                 )
                 
+                # Adiciona os grupos selecionados ao usuário (se o campo existir)
+                if 'grupos' in form.cleaned_data:
+                    grupos = form.cleaned_data['grupos']
+                    user.groups.set(grupos)
+                
                 # Completa e salva o colaborador
                 colaborador.user = user
                 colaborador.data_criacao = timezone.now()
@@ -95,7 +100,7 @@ def cadastrar_colaborador(request):
             except Exception as e:
                 messages.error(request, f'Erro ao cadastrar colaborador: {str(e)}')
     else:
-        form = ColaboradorForm()
+        form = ColaboradorForm(user=request.user)
 
     return render(request, 'estoque/cadastro_colaborador.html', {
         'colaborador_form': form
@@ -748,7 +753,7 @@ def inventario_problemas(request):
     Exibe todos os registros de inventário que possuem problemas (descarte, perda ou fora da validade).
     """
     inventarios_com_problemas = InventarioEquipamento.objects.filter(
-        Q(descarte=True) | Q(perda=True) | Q(fora_validade=True)
+        Q(avaria=True) | Q(perda=True) | Q(nao_devolvido=True)
     ).select_related('equipamento').order_by('-data_inventario')
 
     context = {
@@ -764,3 +769,35 @@ def inventario_detalhe(request, pk):
     """
     inventario = get_object_or_404(InventarioEquipamento, pk=pk)
     return render(request, 'estoque/inventario_detalhe.html', {'inventario': inventario})
+
+
+
+
+def is_gestor(user):
+    return user.groups.filter(name='gestor').exists() or user.is_superuser
+
+
+@login_required
+@user_passes_test(is_gestor, login_url='dashboard')
+def remover_peca_estoque(request, pk):
+    inventario = get_object_or_404(InventarioEquipamento, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            equipamento = inventario.equipamento
+            
+            # Remove o registro de inventário (remoção física)
+            inventario.delete()
+            
+            # Atualiza a quantidade em estoque (opcional)
+            equipamento.quantidade = max(0, equipamento.quantidade - 1)
+            equipamento.save()
+            
+            messages.success(request, 'Peça removida do estoque com sucesso!')
+            return redirect('inventario_problemas')
+            
+        except Exception as e:
+            messages.error(request, f'Erro ao remover peça: {str(e)}')
+            return redirect('inventario_detalhe', pk=pk)
+    
+    return redirect('inventario_detalhe', pk=pk)

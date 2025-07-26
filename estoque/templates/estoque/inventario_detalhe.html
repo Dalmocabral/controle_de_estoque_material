@@ -1,5 +1,5 @@
 {% extends 'base/base_dashboard.html' %}
-
+{% load auth_extras %}  <!-- Carrega a tag personalizada -->
 {% block title %}Detalhe do Inventário{% endblock %}
 
 {% block content %}
@@ -23,7 +23,47 @@
             <p><strong>Perda:</strong> {{ inventario.perda|yesno:"Sim,Não" }}</p>
             <p><strong>Fora da Validade:</strong> {{ inventario.fora_validade|yesno:"Sim,Não" }}</p>
             <p><strong>Observações:</strong> {{ inventario.observacao|default:"Sem observações" }}</p>
+            
+           {% if request.user|is_gestor %}
+    <form id="removerPecaForm" method="post" action="{% url 'remover_peca_estoque' inventario.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="method" value="DELETE">
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="confirmarRemocao" required>
+            <label class="form-check-label" for="confirmarRemocao">
+                Confirmo que desejo REMOVER PERMANENTEMENTE esta peça
+            </label>
         </div>
-    </div>
+        <button type="button" class="btn btn-danger" id="btnRemover">
+            <i class="bi bi-trash"></i> Remover Permanentemente
+        </button>
+    </form>
+    {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnRemover = document.getElementById('btnRemover');
+    if (btnRemover) {
+        btnRemover.addEventListener('click', function() {
+            const confirmado = document.getElementById('confirmarRemocao').checked;
+            if (confirmado) {
+                if (confirm('ATENÇÃO: Esta ação REMOVERÁ PERMANENTEMENTE a peça do banco de dados. Deseja continuar?')) {
+                    // Mudar o método para DELETE (melhor prática REST)
+                    const form = document.getElementById('removerPecaForm');
+                    const methodInput = document.createElement('input');
+                    methodInput.type = 'hidden';
+                    methodInput.name = '_method';
+                    methodInput.value = 'DELETE';
+                    form.appendChild(methodInput);
+                    
+                    form.submit();
+                }
+            } else {
+                alert('Por favor, marque a caixa de confirmação para prosseguir.');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
