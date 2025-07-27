@@ -79,6 +79,12 @@ class Equipamento(models.Model):
     identificador = models.CharField(max_length=50)
     caracteristica = models.TextField(blank=True, null=True)
     descricao_uso = models.TextField(blank=True, null=True)
+    
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('DESCARTADO', 'Descartado'),
+        ('MANUTENCAO', 'Em Manutenção'),
+    ]
 
     TIPO_CHOICES = [
         ('ELETRICO', 'Elétrico'),
@@ -94,6 +100,12 @@ class Equipamento(models.Model):
     foto = models.ImageField(upload_to=caminho_foto, null=True, blank=True)
     qrcode = models.ImageField(upload_to=caminho_qrcode, blank=True)
     data_cadastro = models.DateTimeField(default=now)
+    data_descarte = models.DateTimeField(null=True, blank=True)  # ← Novo campo
+    status = models.CharField(
+        max_length=10, 
+        choices=STATUS_CHOICES, 
+        default='ATIVO'
+    )
 
     def __str__(self):
         return f"{self.equipamento} ({self.identificador})"
@@ -315,6 +327,7 @@ class InventarioEquipamento(models.Model):
     perda = models.BooleanField(default=False)
     nao_devolvido = models.BooleanField(default=False)
     observacao = models.TextField(blank=True)
+    validado = models.BooleanField(default=False)
     # ... (resto dos seus campos de InventarioEquipamento)
     
     def remover_do_estoque(self):

@@ -217,21 +217,16 @@
         <li class="nav-item">
           <a class="nav-link" data-bs-toggle="collapse" href="#equipamentoSubmenu" role="button" aria-expanded="false"
             aria-controls="equipamentoSubmenu">
-            <i class="bi bi-tools"></i> Equipamento
+            <i class="bi bi-tools"></i> Estoque
             <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
           </a>
           <div class="collapse" id="equipamentoSubmenu">
             <ul class="nav flex-column ps-4">
               <li class="nav-item">
                 <a class="nav-link" href="{% url 'estoque_resumido' %}">
-                  <i class="bi bi-list-ul"></i> Estoque
+                  <i class="bi bi-list-ul"></i> Lista estoque
                 </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">
-                  <i class="bi bi-arrows-move"></i> Movimentação
-                </a>
-              </li>
+              </li>              
               <li class="nav-item">
                 <a class="nav-link" href="{% url 'cadastrar_equipamento' %}">
                   <i class="bi bi-plus-circle"></i> Cadastrar Material

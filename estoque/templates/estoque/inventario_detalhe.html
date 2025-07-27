@@ -1,5 +1,5 @@
 {% extends 'base/base_dashboard.html' %}
-{% load auth_extras %}  <!-- Carrega a tag personalizada -->
+{% load auth_extras %}
 {% block title %}Detalhe do Inventário{% endblock %}
 
 {% block content %}
@@ -16,54 +16,59 @@
             {% endif %}
         </div>
         <div class="col-md-8">
-            <p><strong>Nome:</strong> {{ inventario.equipamento.equipamento }}</p>
-            <p><strong>Data do Inventário:</strong> {{ inventario.data_inventario|date:"d/m/Y H:i" }}</p>
-            <p><strong>Quantidade:</strong> {{ inventario.quantidade }}</p>
-            <p><strong>Descarte:</strong> {{ inventario.descarte|yesno:"Sim,Não" }}</p>
-            <p><strong>Perda:</strong> {{ inventario.perda|yesno:"Sim,Não" }}</p>
-            <p><strong>Fora da Validade:</strong> {{ inventario.fora_validade|yesno:"Sim,Não" }}</p>
-            <p><strong>Observações:</strong> {{ inventario.observacao|default:"Sem observações" }}</p>
-            
-           {% if request.user|is_gestor %}
-    <form id="removerPecaForm" method="post" action="{% url 'remover_peca_estoque' inventario.pk %}">
-        {% csrf_token %}
-        <input type="hidden" name="method" value="DELETE">
-        <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="confirmarRemocao" required>
-            <label class="form-check-label" for="confirmarRemocao">
-                Confirmo que desejo REMOVER PERMANENTEMENTE esta peça
-            </label>
-        </div>
-        <button type="button" class="btn btn-danger" id="btnRemover">
-            <i class="bi bi-trash"></i> Remover Permanentemente
-        </button>
-    </form>
-    {% endif %}
-</div>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5>Informações do Equipamento</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Nome:</strong> {{ inventario.equipamento.equipamento }}</p>
+                    <p><strong>Identificador:</strong> {{ inventario.equipamento.identificador }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge bg-{% if inventario.equipamento.status == 'ATIVO' %}success{% elif inventario.equipamento.status == 'DESCARTADO' %}danger{% else %}warning{% endif %}">
+                            {{ inventario.equipamento.get_status_display }}
+                        </span>
+                    </p>
+                </div>
+            </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btnRemover = document.getElementById('btnRemover');
-    if (btnRemover) {
-        btnRemover.addEventListener('click', function() {
-            const confirmado = document.getElementById('confirmarRemocao').checked;
-            if (confirmado) {
-                if (confirm('ATENÇÃO: Esta ação REMOVERÁ PERMANENTEMENTE a peça do banco de dados. Deseja continuar?')) {
-                    // Mudar o método para DELETE (melhor prática REST)
-                    const form = document.getElementById('removerPecaForm');
-                    const methodInput = document.createElement('input');
-                    methodInput.type = 'hidden';
-                    methodInput.name = '_method';
-                    methodInput.value = 'DELETE';
-                    form.appendChild(methodInput);
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5>Detalhes do Inventário</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Data:</strong> {{ inventario.data_inventario|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Realizado por:</strong> {{ inventario.colaborador.nome }}</p>
+                    <p><strong>Quantidade:</strong> {{ inventario.quantidade }}</p>
                     
-                    form.submit();
-                }
-            } else {
-                alert('Por favor, marque a caixa de confirmação para prosseguir.');
-            }
-        });
-    }
-});
-</script>
+                    <div class="alert alert-warning">
+                        <h6>Problemas Reportados:</h6>
+                        <ul>
+                            {% if inventario.avaria %}<li>Avaria</li>{% endif %}
+                            {% if inventario.perda %}<li>Perda</li>{% endif %}
+                            {% if inventario.nao_devolvido %}<li>Não devolvido</li>{% endif %}
+                        </ul>
+                        <p><strong>Observações:</strong><br>{{ inventario.observacao|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if request.user|is_gestor and inventario.equipamento.status != 'DESCARTADO' %}
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5>Ação de Descarte</h5>
+                </div>
+                <div class="card-body">
+                    <form id="removerPecaForm" method="post" action="{% url 'remover_peca_estoque' inventario.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" 
+                            onclick="return confirm('Tem certeza que deseja marcar este equipamento como DESCARTADO? Esta ação não pode ser desfeita.')">
+                            <i class="bi bi-trash"></i> Confirmar Descarte
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

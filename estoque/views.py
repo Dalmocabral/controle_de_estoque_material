@@ -433,19 +433,20 @@ def buscar_pecas_com_certificado(request):
     q = request.GET.get('q', '').strip()
     data_atual = now()
 
-    # 1. Buscar IDs de equipamentos agendados e que ainda NÃO foram retirados
+    # Equipamentos em agendamentos ativos
     agendamentos_ativos = Agendamento.objects.filter(status__in=['AGENDADO'])
     pecas_em_uso_ids = PecaAgendada.objects.filter(
         agendamento__in=agendamentos_ativos
     ).values_list('equipamento_id', flat=True)
 
-    # 2. Buscar equipamentos com certificação válida E que não estão agendados ativamente
+    # Equipamentos com certificação válida, ativos e não agendados
     equipamentos_disponiveis = Equipamento.objects.filter(
         Q(equipamento__icontains=q) | Q(identificador__icontains=q),
-        certificacoes__data_vencimento__gte=data_atual
+        certificacoes__data_vencimento__gte=data_atual,
+        status='ATIVO'  # ← filtro importante aqui
     ).exclude(pk__in=pecas_em_uso_ids).distinct()
 
-    # 3. Preparar os dados de resposta
+    # Montar resposta
     dados = []
     for p in equipamentos_disponiveis:
         cert = p.certificacoes.order_by('-data_vencimento').first()
@@ -458,6 +459,7 @@ def buscar_pecas_com_certificado(request):
         })
 
     return JsonResponse({'resultados': dados})
+
 
 
 
@@ -723,20 +725,31 @@ def devolucao_material(request):
 @login_required
 def registrar_inventario(request, pk):
     equipamento = get_object_or_404(Equipamento, pk=pk)
+    
+    # Verificar se equipamento já está descartado
+    if equipamento.status == 'DESCARTADO':
+        messages.error(request, 'Este equipamento já está descartado e não pode ser inventariado!')
+        return redirect('detalhe_equipamento', pk=pk)
+        
     colaborador = Colaborador.objects.get(user=request.user)
 
     if request.method == 'POST':
         form = InventarioForm(request.POST)
-        print(request.POST)
         if form.is_valid():
             inventario = form.save(commit=False)
             inventario.equipamento = equipamento
             inventario.colaborador = colaborador
-            inventario.save()
+            
+            # Verificar se há problemas reportados
+            if inventario.avaria or inventario.perda or inventario.nao_devolvido:
+                inventario.save()
+                messages.warning(request, 'Inventário registrado com problemas! O gestor será notificado.')
+            else:
+                messages.success(request, 'Inventário registrado sem problemas.')
+            
             return redirect('detalhe_equipamento', pk=equipamento.pk)
         else:
-            print("Formulário inválido:", form.errors.as_json())
-
+            messages.error(request, 'Por favor, corrija os erros no formulário!')
     else:
         form = InventarioForm()
 
@@ -746,15 +759,15 @@ def registrar_inventario(request, pk):
     })
     
     
-    
 @login_required
 def inventario_problemas(request):
     """
-    Exibe todos os registros de inventário que possuem problemas (descarte, perda ou fora da validade).
+    Exibe apenas os registros de inventário que possuem problemas 
+    (avaria=True OU perda=True OU nao_devolvido=True)
     """
     inventarios_com_problemas = InventarioEquipamento.objects.filter(
         Q(avaria=True) | Q(perda=True) | Q(nao_devolvido=True)
-    ).select_related('equipamento').order_by('-data_inventario')
+    ).select_related('equipamento', 'colaborador').order_by('-data_inventario')
 
     context = {
         'inventarios': inventarios_com_problemas,
@@ -775,8 +788,6 @@ def inventario_detalhe(request, pk):
 
 def is_gestor(user):
     return user.groups.filter(name='gestor').exists() or user.is_superuser
-
-
 @login_required
 @user_passes_test(is_gestor, login_url='dashboard')
 def remover_peca_estoque(request, pk):
@@ -784,20 +795,27 @@ def remover_peca_estoque(request, pk):
     
     if request.method == 'POST':
         try:
+            # Marcar o equipamento como descartado
             equipamento = inventario.equipamento
+            equipamento.status = 'DESCARTADO'
+            equipamento.data_descarte = timezone.now()
             
-            # Remove o registro de inventário (remoção física)
-            inventario.delete()
-            
-            # Atualiza a quantidade em estoque (opcional)
-            equipamento.quantidade = max(0, equipamento.quantidade - 1)
+            # Usar apenas a observação do inventário como motivo
+            equipamento.motivo_descarte = (
+                f"Motivo do inventário: {inventario.observacao}\n"
+                f"Descarte realizado por: {request.user.username} em {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+            )
             equipamento.save()
-            
-            messages.success(request, 'Peça removida do estoque com sucesso!')
+
+            # Marcar o inventário como descartado
+            inventario.descarte = True
+            inventario.save()
+
+            messages.success(request, 'Peça marcada como descartada com sucesso!')
             return redirect('inventario_problemas')
-            
+        
         except Exception as e:
-            messages.error(request, f'Erro ao remover peça: {str(e)}')
+            messages.error(request, f'Erro ao marcar como descartado: {str(e)}')
             return redirect('inventario_detalhe', pk=pk)
-    
+
     return redirect('inventario_detalhe', pk=pk)
