@@ -236,3 +236,5 @@ class InventarioForm(forms.ModelForm):
             'nao_devolvido': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+        
+        

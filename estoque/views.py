@@ -25,6 +25,12 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import ProtectedError
 from django.db import transaction
 from django.db import IntegrityError
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from datetime import datetime
+import os
+from django.conf import settings
 
 # Local Apps
 from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm, DevolucaoMaterialForm, InventarioForm
@@ -821,3 +827,77 @@ def remover_peca_estoque(request, pk):
             return redirect('inventario_detalhe', pk=pk)
 
     return redirect('inventario_detalhe', pk=pk)
+
+
+def relatorio_inventario_pdf(request):
+    INVENTARIO_CHOICES = {
+        'GERAL': 'Inventário Geral',
+        'PARCIAL': 'Inventário Parcial',
+        'PERIODICO': 'Inventário Periódico',
+        'ROTATIVO': 'Inventário Rotativo'
+    }
+    
+    if request.method == 'POST':
+        tipo_inventario = request.POST.get('tipo_inventario')
+        data_inicio = request.POST.get('data_inicio')
+        data_fim = request.POST.get('data_fim')
+        
+        try:
+            data_inicio = datetime.strptime(data_inicio, '%Y-%m-%d') if data_inicio else None
+            data_fim = datetime.strptime(data_fim, '%Y-%m-%d') if data_fim else None
+        except ValueError:
+            return HttpResponse("Formato de data inválido. Use YYYY-MM-DD.")
+        
+        # Filtra apenas itens que foram inventariados (exclui os que nunca foram inventariados)
+        inventarios = InventarioEquipamento.objects.all()
+        
+        if data_inicio and data_fim:
+            inventarios = inventarios.filter(data_inventario__range=[data_inicio, data_fim])
+        
+        if tipo_inventario == 'PARCIAL':
+            inventarios = inventarios.filter(avaria=True) | inventarios.filter(perda=True) | inventarios.filter(nao_devolvido=True)
+        
+        # Separar peças com e sem problemas
+        inventarios_com_problemas = inventarios.filter(
+            Q(avaria=True) | Q(perda=True) | Q(nao_devolvido=True)
+        ).distinct()
+        
+        inventarios_sem_problemas = inventarios.exclude(
+            Q(avaria=True) | Q(perda=True) | Q(nao_devolvido=True)
+        ).distinct()
+        
+        total_inventariado = inventarios.count()
+        total_descartes = inventarios.filter(equipamento__status='DESCARTADO').count()
+        total_pendentes = total_inventariado - total_descartes
+        
+        context = {
+            'inventarios_com_problemas': inventarios_com_problemas,
+            'inventarios_sem_problemas': inventarios_sem_problemas,
+            'tipo_inventario': INVENTARIO_CHOICES.get(tipo_inventario, ''),
+            'data_inicio': data_inicio.strftime('%d/%m/%Y') if data_inicio else '',
+            'data_fim': data_fim.strftime('%d/%m/%Y') if data_fim else '',
+            'total_inventariado': total_inventariado,
+            'total_descartes': total_descartes,
+            'total_pendentes': total_pendentes,
+        }
+        
+        template = get_template('estoque/relatorio_inventario_pdf.html')
+        html = template.render(context)
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="relatorio_inventario_{timezone.now().date()}.pdf"'
+        
+        pisa_status = pisa.CreatePDF(
+            html, 
+            dest=response,
+            encoding='UTF-8',
+            link_callback=lambda uri, rel: os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, '')))
+        
+        if pisa_status.err:
+            return HttpResponse('Erro ao gerar PDF')
+        return response
+    
+    context = {
+        'opcoes_inventario': INVENTARIO_CHOICES
+    }
+    return render(request, 'estoque/selecionar_relatorio.html', context)

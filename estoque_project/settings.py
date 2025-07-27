@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     
     #APP Terceiros
     'widget_tweaks',
+   
 ]
 
 MIDDLEWARE = [

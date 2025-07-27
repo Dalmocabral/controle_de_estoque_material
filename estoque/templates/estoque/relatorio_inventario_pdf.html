@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Inventário</title>
+    <style>
+        @page {
+            size: landscape;
+            margin: 1cm;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .title { 
+            font-size: 16px; 
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .subtitle { 
+            font-size: 12px; 
+            margin-bottom: 10px;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        .summary-item {
+            text-align: center;
+            padding: 5px 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .summary-item strong {
+            display: block;
+            font-size: 12px;
+        }
+        .section-title {
+            background-color: #e9ecef;
+            padding: 5px;
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+        }
+        .table { 
+            width: 100%; 
+            border-collapse: collapse;
+            font-size: 9px;
+            margin-bottom: 20px;
+        }
+        .table th { 
+            background-color: #f2f2f2; 
+            text-align: left;
+            padding: 6px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .table td { 
+            padding: 5px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        .qr-code { 
+            width: 40px; 
+            height: 40px;
+        }
+        .item-img { 
+            width: 50px; 
+            height: 50px; 
+            object-fit: cover;
+        }
+        .status-avaria { color: #d9534f; }
+        .status-perda { color: #f0ad4e; }
+        .status-nodev { color: #5bc0de; }
+        .status-ok { color: #5cb85c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Relatório de Inventário</div>
+        <div class="subtitle">
+            Tipo: {{ tipo_inventario }} | Período: {{ data_inicio }} a {{ data_fim }}
+        </div>
+    </div>
+    
+    <div class="summary">
+        <div class="summary-item">
+            <strong>Total Inventariado</strong>
+            {{ total_inventariado }}
+        </div>
+        <div class="summary-item">
+            <strong>Total Descartados</strong>
+            {{ total_descartes }}
+        </div>
+        <div class="summary-item">
+            <strong>Total Pendentes</strong>
+            {{ total_pendentes }}
+        </div>
+    </div>
+
+    <!-- Seção para peças com problemas -->
+    <div class="section-title">Peças com Problemas</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th width="5%">Imagem</th>
+                <th width="15%">Nome da Peça</th>
+                <th width="10%">Identificação</th>
+                <th width="8%">Data Inventário</th>
+                <th width="8%">Data Descarte</th>
+                <th width="12%">Status</th>
+                <th width="15%">Problemas</th>
+                <th width="15%">Motivo</th>
+                <th width="7%">Localização</th>
+                <th width="5%">QR Code</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in inventarios_com_problemas %}
+            <tr>
+                <td>
+                    {% if inv.equipamento.foto %}
+                    <img src="{{ inv.equipamento.foto.path }}" class="item-img">
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
+                <td>{{ inv.equipamento.equipamento }}</td>
+                <td>{{ inv.equipamento.identificador }}</td>
+                <td>{{ inv.data_inventario|date:"d/m/Y" }}</td>
+                <td>{{ inv.equipamento.data_descarte|date:"d/m/Y"|default:"-" }}</td>
+                <td>
+                    {% if inv.equipamento.status == 'DESCARTADO' %}
+                        <span class="status-perda">Descartado</span>
+                    {% elif inv.equipamento.status == 'MANUTENCAO' %}
+                        <span class="status-nodev">Manutenção</span>
+                    {% else %}
+                        <span class="status-ok">Ativo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if inv.avaria %}<span class="status-avaria">Avaria</span><br>{% endif %}
+                    {% if inv.perda %}<span class="status-perda">Perda</span><br>{% endif %}
+                    {% if inv.nao_devolvido %}<span class="status-nodev">Não Devolvido</span>{% endif %}
+                </td>
+                <td>{{ inv.observacao|default:"-"|truncatechars:50 }}</td>
+                <td>{{ inv.equipamento.localizacao|default:"-" }}</td>
+                <td>
+                    {% if inv.equipamento.qrcode %}
+                    <img src="{{ inv.equipamento.qrcode.path }}" class="qr-code">
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="text-align: center;">Nenhuma peça com problemas encontrada</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Seção para peças sem problemas -->
+    <div class="section-title">Peças Sem Problemas</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th width="5%">Imagem</th>
+                <th width="15%">Nome da Peça</th>
+                <th width="10%">Identificação</th>
+                <th width="8%">Data Inventário</th>
+                <th width="8%">Data Descarte</th>
+                <th width="12%">Status</th>
+                <th width="15%">Problemas</th>
+                <th width="15%">Motivo</th>
+                <th width="7%">Localização</th>
+                <th width="5%">QR Code</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in inventarios_sem_problemas %}
+            <tr>
+                <td>
+                    {% if inv.equipamento.foto %}
+                    <img src="{{ inv.equipamento.foto.path }}" class="item-img">
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
+                <td>{{ inv.equipamento.equipamento }}</td>
+                <td>{{ inv.equipamento.identificador }}</td>
+                <td>{{ inv.data_inventario|date:"d/m/Y" }}</td>
+                <td>{{ inv.equipamento.data_descarte|date:"d/m/Y"|default:"-" }}</td>
+                <td>
+                    {% if inv.equipamento.status == 'DESCARTADO' %}
+                        <span class="status-perda">Descartado</span>
+                    {% elif inv.equipamento.status == 'MANUTENCAO' %}
+                        <span class="status-nodev">Manutenção</span>
+                    {% else %}
+                        <span class="status-ok">Ativo</span>
+                    {% endif %}
+                </td>
+                <td><span class="status-ok">Sem problemas</span></td>
+                <td>{{ inv.observacao|default:"-"|truncatechars:50 }}</td>
+                <td>{{ inv.equipamento.localizacao|default:"-" }}</td>
+                <td>
+                    {% if inv.equipamento.qrcode %}
+                    <img src="{{ inv.equipamento.qrcode.path }}" class="qr-code">
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="text-align: center;">Nenhuma peça sem problemas encontrada</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
