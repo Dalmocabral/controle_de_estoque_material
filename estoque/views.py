@@ -726,7 +726,7 @@ def devolucao_material(request):
 def registrar_inventario(request, pk):
     equipamento = get_object_or_404(Equipamento, pk=pk)
     
-    # Verificar se equipamento já está descartado
+    # Verifica se o equipamento está descartado
     if equipamento.status == 'DESCARTADO':
         messages.error(request, 'Este equipamento já está descartado e não pode ser inventariado!')
         return redirect('detalhe_equipamento', pk=pk)
@@ -740,13 +740,15 @@ def registrar_inventario(request, pk):
             inventario.equipamento = equipamento
             inventario.colaborador = colaborador
             
-            # Verificar se há problemas reportados
+            # ✅ Salva sempre o inventário, com ou sem problema
+            inventario.save()
+
+            # ✅ Exibe mensagem conforme status do inventário
             if inventario.avaria or inventario.perda or inventario.nao_devolvido:
-                inventario.save()
                 messages.warning(request, 'Inventário registrado com problemas! O gestor será notificado.')
             else:
                 messages.success(request, 'Inventário registrado sem problemas.')
-            
+
             return redirect('detalhe_equipamento', pk=equipamento.pk)
         else:
             messages.error(request, 'Por favor, corrija os erros no formulário!')
