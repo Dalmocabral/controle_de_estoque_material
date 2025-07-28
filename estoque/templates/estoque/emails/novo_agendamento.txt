@@ -1,0 +1,20 @@
+Novo Agendamento Criado - #{{ numero_agendamento }}
+
+Detalhes do Agendamento:
+- Número: {{ numero_agendamento }}
+- Solicitante: {{ solicitante }}
+- Data/Hora: {{ data_hora }}
+- Setor: {{ setor }}
+- Local de Uso: {{ local_uso }}
+- Tipo de Operação: {{ tipo_operacao }}
+
+Peças Agendadas:
+{% for peca in pecas_agendadas %}
+- {{ peca.nome }} (ID: {{ peca.numero_identificacao }})
+{% endfor %}
+
+Para mais detalhes, acesse: {{ detalhes_url }}
+
+---
+Este é um e-mail automático, por favor não responda diretamente.
+© {% now "Y" %} Sistema de Agendamentos

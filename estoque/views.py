@@ -10,7 +10,7 @@ import re
 # Django
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.auth.views import LoginView
 from django.db.models import Q, Sum, Max
 from django.http import JsonResponse
@@ -31,10 +31,18 @@ from xhtml2pdf import pisa
 from datetime import datetime
 import os
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.http import HttpRequest
+import logging
 
 # Local Apps
 from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm, DevolucaoMaterialForm, InventarioForm
 from .models import Certificacao, Colaborador, Equipamento, Agendamento, PecaAgendada, SaidaMaterial, VerificacaoPeca, ChecklistSaida, TermoRetirada, DevolucaoMaterial, InventarioEquipamento
+
+# Configurar logger
+logger = logging.getLogger(__name__)
+
 
 
 class CustomLoginView(LoginView):
@@ -386,55 +394,139 @@ def agendar_view(request):
         form = AgendamentoForm(request.POST)
         if form.is_valid():
             try:
+                # Etapa 1: Salvar o agendamento
                 agendamento = form.save(commit=False)
-                agendamento.status = 'AG'  # Definindo status como 'Agendado'
+                agendamento.status = 'AG'
                 agendamento.save()
 
+                # Etapa 2: Processar peças agendadas
                 pecas_ids = request.POST.get('pecas_ids', '')
                 if pecas_ids:
                     for pid in pecas_ids.split(','):
                         if pid:
-                            PecaAgendada.objects.create(
-                                agendamento=agendamento, 
-                                equipamento_id=int(pid)
-                            )
+                            try:
+                                PecaAgendada.objects.create(
+                                    agendamento=agendamento, 
+                                    equipamento_id=int(pid)
+                                )
+                            except Exception as e:
+                                logger.error(f"Erro ao adicionar peça {pid}: {str(e)}")
+                                # Decida aqui se quer continuar ou interromper
+                                continue
+
+                # Etapa 3: Enviar notificação por email (em segundo plano)
+                try:
+                    enviar_email_notificacao(request, agendamento)
+                except Exception as e:
+                    logger.error(f"Erro ao enviar email: {str(e)}")
+                    # Não interrompe o fluxo principal se o email falhar
 
                 # Resposta para requisições AJAX
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': True,
                         'numero_agendamento': agendamento.numero_agendamento,
-                        'redirect_url': reverse('lista_agendamento')  # Alterado aqui
+                        'redirect_url': reverse('lista_agendamento')
                     })
 
-                # Redirecionamento tradicional
-                return redirect('lista_agendamento')  # Alterado aqui
+                return redirect('lista_agendamento')
 
             except Exception as e:
-                # Tratamento de erros para AJAX
+                logger.error(f"Erro ao salvar agendamento: {str(e)}")
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': False,
-                        'error': str(e)
+                        'error': f"Ocorreu um erro ao salvar o agendamento: {str(e)}"
                     }, status=400)
-                raise e
-
-        # Formulário inválido
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            errors = {field: [str(error) for error in error_list] for field, error_list in form.errors.items()}
-            return JsonResponse({
-                'success': False,
-                'errors': errors
-            }, status=400)
-        
-        # Caso não seja AJAX e formulário inválido
-        return render(request, 'estoque/agendamento_form.html', {'form': form})
+                messages.error(request, f"Ocorreu um erro ao salvar o agendamento: {str(e)}")
+                return render(request, 'estoque/agendamento_form.html', {'form': form})
     
-    # GET request
     form = AgendamentoForm()
     return render(request, 'estoque/agendamento_form.html', {'form': form})
 
+def enviar_email_notificacao(request, agendamento):
+    try:
+        # Obter grupos (com tratamento de erro)
+        try:
+            grupo_gestores = Group.objects.get(name='gestor')
+            grupo_assistentes = Group.objects.get(name='assistente-adm')
+        except Group.DoesNotExist as e:
+            logger.warning(f"Grupo não encontrado: {str(e)}")
+            return
 
+        # Buscar destinatários
+        destinatarios = User.objects.filter(
+            Q(groups__in=[grupo_gestores, grupo_assistentes]) & 
+            Q(is_active=True)
+        ).distinct()
+        
+        if not destinatarios:
+            logger.info("Nenhum destinatário encontrado para notificação")
+            return
+        
+        emails = [user.email for user in destinatarios if user.email]
+        
+        if not emails:
+            logger.info("Nenhum email válido encontrado para notificação")
+            return
+        
+        # Obter peças agendadas com informações completas
+        pecas_agendadas = []
+        for peca_agendada in agendamento.pecas_agendadas.all():
+            equipamento = peca_agendada.equipamento
+            imagem_url = request.build_absolute_uri(equipamento.foto.url) if equipamento.foto else None
+            pecas_agendadas.append({
+                'nome': equipamento.equipamento,
+                'numero_identificacao': equipamento.identificador,
+                'imagem_url': imagem_url  # Já construímos a URL absoluta aqui
+            })
+        
+        try:
+            # Preparar contexto do email (com tratamento para a URL)
+            detalhes_url = request.build_absolute_uri(
+                reverse('agendamento_detalhe', args=[agendamento.pk])
+            )
+        except Exception as e:
+            logger.error(f"Erro ao construir URL de detalhes: {str(e)}")
+            detalhes_url = "URL indisponível"
+
+        context = {
+            'numero_agendamento': agendamento.numero_agendamento,
+            'solicitante': agendamento.nome_solicitante,
+            'data_hora': agendamento.data_hora_agendamento.strftime('%d/%m/%Y %H:%M'),
+            'setor': agendamento.get_setor_solicitante_display(),
+            'local_uso': agendamento.local_uso,
+            'tipo_operacao': agendamento.tipo_operacao,
+            'detalhes_url': detalhes_url,
+            'pecas_agendadas': pecas_agendadas,
+            'site_url': request.build_absolute_uri('/')  # Adicionando URL base do site
+        }
+        
+        # Renderizar templates
+        assunto = f'Novo Agendamento Criado - #{agendamento.numero_agendamento}'
+        mensagem = render_to_string('estoque/emails/novo_agendamento.txt', context)
+        mensagem_html = render_to_string('estoque/emails/novo_agendamento.html', context)
+        
+        # Enviar email com tratamento de erro específico
+        try:
+            send_mail(
+                subject=assunto,
+                message=mensagem,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=emails,
+                html_message=mensagem_html,
+                fail_silently=False
+            )
+            logger.info(f"Email de notificação enviado para {len(emails)} destinatários")
+        except Exception as e:
+            logger.error(f"Erro ao enviar email: {str(e)}")
+            raise
+        
+    except Exception as e:
+        logger.error(f"Erro no processo de notificação por email: {str(e)}")
+        raise
+    
+    
 def buscar_pecas_com_certificado(request):
     q = request.GET.get('q', '').strip()
     data_atual = now()
