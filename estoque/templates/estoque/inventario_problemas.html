@@ -3,75 +3,202 @@
 {% block title %}Inventário com Problemas{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">Inventários com Problemas</h2>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+            Inventários com Problemas
+        </h2>
+        <div class="btn-group" role="group">
+            <a href="{% url 'estoque_resumido' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
 
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Imagem</th>
-                <th>Nome da Peça</th>
-                <th>Indetificação</th>
-                <th>Data do Inventário</th>
-                <th>Status</th>
-                <th>Problemas</th>
-                <th>Ação</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for inventario in inventarios %}
-                <tr>
-                    <!-- Imagem -->
-                    <td style="width: 120px;">
-                        {% if inventario.equipamento.foto %}
-                            <img src="{{ inventario.equipamento.foto.url }}" class="img-thumbnail" style="max-height: 100px;">
-                        {% else %}
-                            <span class="text-muted">Sem imagem</span>
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom-0 py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check me-2 text-primary"></i>
+                        Registros com problemas
+                    </h5>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-light text-dark">
+                        Total: {{ inventarios.paginator.count }} registro(s)
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="100">Imagem</th>
+                            <th>Nome da Peça</th>
+                            <th>Identificação</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Problemas</th>
+                            <th width="120">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inventario in inventarios %}
+                        <tr>
+                            <!-- Imagem -->
+                            <td>
+                                {% if inventario.equipamento.foto %}
+                                <img src="{{ inventario.equipamento.foto.url }}" 
+                                     class="img-thumbnail rounded" 
+                                     style="width: 80px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" 
+                                     style="width: 80px; height: 80px;">
+                                    <i class="bi bi-image text-muted fs-4"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Nome da Peça -->
+                            <td>
+                                <strong>{{ inventario.equipamento.equipamento }}</strong>
+                                <div class="text-muted small mt-1">
+                                    Registro #{{ inventario.equipamento.registro }}
+                                </div>
+                            </td>
+
+                            <!-- Identificação -->
+                            <td>
+                                <span class="badge bg-primary">{{ inventario.equipamento.identificador }}</span>
+                            </td>
+
+                            <!-- Data do Inventário -->
+                            <td>
+                                {{ inventario.data_inventario|date:"d/m/Y" }}
+                                <div class="text-muted small">{{ inventario.data_inventario|date:"H:i" }}</div>
+                            </td>
+
+                            <!-- Status -->
+                            <td>
+                                {% if inventario.equipamento.status == 'DESCARTADO' %}
+                                <span class="badge bg-dark">
+                                    <i class="bi bi-trash-fill me-1"></i>Descartado
+                                </span>
+                                {% elif inventario.descarte %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Aguardando confirmação
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-clock-history me-1"></i>Pendente
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Problemas -->
+                            <td>
+                                {% if inventario.avaria %}
+                                <span class="badge bg-warning text-dark mb-1">
+                                    <i class="bi bi-tools me-1"></i>Avaria
+                                </span>
+                                {% endif %}
+                                {% if inventario.perda %}
+                                <span class="badge bg-danger mb-1">
+                                    <i class="bi bi-exclamation-octagon-fill me-1"></i>Perda
+                                </span>
+                                {% endif %}
+                                {% if inventario.nao_devolvido %}
+                                <span class="badge bg-secondary mb-1">
+                                    <i class="bi bi-box-seam me-1"></i>Não devolvido
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Botão de Detalhes -->
+                            <td>
+                                {% if inventario.equipamento.status != 'DESCARTADO' %}
+                                <a href="{% url 'inventario_detalhe' inventario.id %}" 
+                                   class="btn btn-sm btn-outline-primary w-100"
+                                   title="Ver detalhes">
+                                    <i class="bi bi-eye me-1"></i>Detalhes
+                                </a>
+                                {% else %}
+                                <button class="btn btn-sm btn-outline-secondary w-100" disabled>
+                                    <i class="bi bi-check-circle me-1"></i>Finalizado
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="d-flex flex-column align-items-center justify-content-center">
+                                    <i class="bi bi-check-circle-fill text-success fs-1 mb-3"></i>
+                                    <h5 class="text-muted">Nenhum inventário com problemas encontrado</h5>
+                                    <p class="text-muted small">Todos os equipamentos estão em conformidade</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            {% if inventarios.paginator.num_pages > 1 %}
+            <div class="card-footer bg-white border-top-0 py-3">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if inventarios.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ inventarios.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
                         {% endif %}
-                    </td>
-
-                    <!-- Nome da Peça -->
-                    <td>{{ inventario.equipamento.equipamento }}</td>
-
-                    <!-- Identificação -->
-                    <td>{{ inventario.equipamento.identificador }}</td>
-
-                    <!-- Data do Inventário -->
-                    <td>{{ inventario.data_inventario|date:"d/m/Y H:i" }}</td>
-
-                    <!-- Status -->
-                    <td>
-                        {% if inventario.equipamento.status == 'DESCARTADO' %}
-                            <span class="badge bg-dark">Descartado</span>
-                        {% elif inventario.descarte %}
-                            <span class="badge bg-danger">Aguardando confirmação</span>
-                        {% else %}
-                            <span class="badge bg-warning">Pendente</span>
+                        
+                        {% for num in inventarios.paginator.page_range %}
+                            {% if inventarios.number == num %}
+                            <li class="page-item active">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% elif num > inventarios.number|add:'-3' and num < inventarios.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if inventarios.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ inventarios.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ inventarios.paginator.num_pages }}" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
                         {% endif %}
-                    </td>
-
-                    <!-- Problemas -->
-                    <td>
-                        {% if inventario.avaria %}<span class="badge bg-warning">Avaria</span>{% endif %}
-                        {% if inventario.perda %}<span class="badge bg-danger">Perda</span>{% endif %}
-                        {% if inventario.nao_devolvido %}<span class="badge bg-secondary">Não devolvido</span>{% endif %}
-                    </td>
-
-                    <!-- Botão de Detalhes -->
-                    <td>
-                        {% if inventario.equipamento.status != 'DESCARTADO' %}
-                            <a href="{% url 'inventario_detalhe' inventario.id %}" class="btn btn-sm btn-outline-primary">Detalhes</a>
-                        {% else %}
-                            <button class="btn btn-sm btn-outline-secondary" disabled>Finalizado</button>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center">Nenhum inventário com problemas encontrado.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </ul>
+                </nav>
+                <div class="text-center text-muted small mt-2">
+                    Página {{ inventarios.number }} de {{ inventarios.paginator.num_pages }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

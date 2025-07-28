@@ -3,66 +3,165 @@
 {% block title %}Detalhe do Inventário{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h3>Detalhe do Inventário</h3>
-    <hr>
-    
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-clipboard2-data-fill me-2 text-primary"></i>
+            Detalhes do Inventário
+        </h2>
+        <a href="{% url 'inventario_problemas' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+
     <div class="row">
-        <div class="col-md-4">
-            {% if inventario.equipamento.foto %}
-                <img src="{{ inventario.equipamento.foto.url }}" class="img-fluid rounded">
-            {% else %}
-                <p class="text-muted">Sem imagem</p>
-            {% endif %}
-        </div>
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5>Informações do Equipamento</h5>
+        <!-- Coluna da Imagem -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0">
+                        <i class="bi bi-image me-2 text-primary"></i>
+                        Imagem do Equipamento
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <p><strong>Nome:</strong> {{ inventario.equipamento.equipamento }}</p>
-                    <p><strong>Identificador:</strong> {{ inventario.equipamento.identificador }}</p>
-                    <p><strong>Status:</strong> 
-                        <span class="badge bg-{% if inventario.equipamento.status == 'ATIVO' %}success{% elif inventario.equipamento.status == 'DESCARTADO' %}danger{% else %}warning{% endif %}">
-                            {{ inventario.equipamento.get_status_display }}
-                        </span>
-                    </p>
+                <div class="card-body text-center">
+                    {% if inventario.equipamento.foto %}
+                    <img src="{{ inventario.equipamento.foto.url }}" 
+                         class="img-fluid rounded" 
+                         style="max-height: 300px; object-fit: contain;">
+                    {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                         style="height: 200px;">
+                        <div class="text-center">
+                            <i class="bi bi-image text-muted fs-1"></i>
+                            <p class="text-muted mt-2">Sem imagem disponível</p>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
+        </div>
 
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5>Detalhes do Inventário</h5>
+        <!-- Coluna das Informações -->
+        <div class="col-lg-8">
+            <!-- Card de Informações do Equipamento -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam me-2 text-primary"></i>
+                        Informações do Equipamento
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Data:</strong> {{ inventario.data_inventario|date:"d/m/Y H:i" }}</p>
-                    <p><strong>Realizado por:</strong> {{ inventario.colaborador.nome }}</p>
-                    <p><strong>Quantidade:</strong> {{ inventario.quantidade }}</p>
-                    
-                    <div class="alert alert-warning">
-                        <h6>Problemas Reportados:</h6>
-                        <ul>
-                            {% if inventario.avaria %}<li>Avaria</li>{% endif %}
-                            {% if inventario.perda %}<li>Perda</li>{% endif %}
-                            {% if inventario.nao_devolvido %}<li>Não devolvido</li>{% endif %}
-                        </ul>
-                        <p><strong>Observações:</strong><br>{{ inventario.observacao|linebreaks }}</p>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small mb-1">Nome</label>
+                            <p class="h5">{{ inventario.equipamento.equipamento }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small mb-1">Identificador</label>
+                            <p class="h5">
+                                <span class="badge bg-primary">{{ inventario.equipamento.identificador }}</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small mb-1">Registro</label>
+                            <p class="h5">#{{ inventario.equipamento.registro }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small mb-1">Status</label>
+                            <p class="h5">
+                                <span class="badge bg-{% if inventario.equipamento.status == 'ATIVO' %}success{% elif inventario.equipamento.status == 'DESCARTADO' %}danger{% else %}warning{% endif %}">
+                                    <i class="bi 
+                                        {% if inventario.equipamento.status == 'ATIVO' %}bi-check-circle-fill
+                                        {% elif inventario.equipamento.status == 'DESCARTADO' %}bi-trash-fill
+                                        {% else %}bi-exclamation-triangle-fill{% endif %} me-1">
+                                    </i>
+                                    {{ inventario.equipamento.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {% if request.user|is_gestor and inventario.equipamento.status != 'DESCARTADO' %}
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h5>Ação de Descarte</h5>
+            <!-- Card de Detalhes do Inventário -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard2-check me-2 text-primary"></i>
+                        Detalhes do Inventário
+                    </h5>
                 </div>
                 <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small mb-1">Data</label>
+                            <p class="h5">{{ inventario.data_inventario|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small mb-1">Realizado por</label>
+                            <p class="h5">{{ inventario.colaborador.nome }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small mb-1">Quantidade</label>
+                            <p class="h5">{{ inventario.quantidade }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Alert de Problemas -->
+                    <div class="alert alert-{% if inventario.avaria or inventario.perda or inventario.nao_devolvido %}warning{% else %}success{% endif %} mt-3">
+                        <h6 class="alert-heading d-flex align-items-center">
+                            <i class="bi bi-{% if inventario.avaria or inventario.perda or inventario.nao_devolvido %}exclamation-triangle-fill{% else %}check-circle-fill{% endif %} me-2"></i>
+                            {% if inventario.avaria or inventario.perda or inventario.nao_devolvido %}Problemas Reportados{% else %}Sem problemas reportados{% endif %}
+                        </h6>
+                        <hr>
+                        {% if inventario.avaria or inventario.perda or inventario.nao_devolvido %}
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% if inventario.avaria %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-tools me-1"></i>Avaria
+                            </span>
+                            {% endif %}
+                            {% if inventario.perda %}
+                            <span class="badge bg-danger">
+                                <i class="bi bi-exclamation-octagon-fill me-1"></i>Perda
+                            </span>
+                            {% endif %}
+                            {% if inventario.nao_devolvido %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-box-seam me-1"></i>Não devolvido
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <label class="form-label text-muted small mb-1">Observações</label>
+                        <div class="border rounded p-3 bg-white">
+                            {{ inventario.observacao|linebreaksbr|default:"Nenhuma observação registrada" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card de Ações (se for gestor) -->
+            {% if request.user|is_gestor and inventario.equipamento.status != 'DESCARTADO' %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0 text-danger">
+                        <i class="bi bi-trash-fill me-2"></i>
+                        Ação de Descarte
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Esta ação marcará permanentemente o equipamento como DESCARTADO.
+                    </div>
                     <form id="removerPecaForm" method="post" action="{% url 'remover_peca_estoque' inventario.pk %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger" 
-                            onclick="return confirm('Tem certeza que deseja marcar este equipamento como DESCARTADO? Esta ação não pode ser desfeita.')">
-                            <i class="bi bi-trash"></i> Confirmar Descarte
+                        <button type="submit" class="btn btn-danger px-4" id="confirmarDescarteBtn">
+                            <i class="bi bi-trash-fill me-2"></i> Confirmar Descarte
                         </button>
                     </form>
                 </div>
@@ -71,4 +170,54 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmação de descarte com SweetAlert ou confirm padrão
+    const descarteForm = document.getElementById('removerPecaForm');
+    if (descarteForm) {
+        descarteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Usando SweetAlert se estiver disponível, senão usa confirm padrão
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Confirmar Descarte?',
+                    text: "Esta ação marcará o equipamento como DESCARTADO permanentemente!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sim, descartar!',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Mostrar loading no botão
+                        const btn = document.getElementById('confirmarDescarteBtn');
+                        const originalHtml = btn.innerHTML;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...';
+                        btn.disabled = true;
+                        
+                        // Enviar o formulário
+                        e.target.submit();
+                    }
+                });
+            } else {
+                if (confirm('Tem certeza que deseja marcar este equipamento como DESCARTADO? Esta ação não pode ser desfeita.')) {
+                    // Mostrar loading no botão
+                    const btn = document.getElementById('confirmarDescarteBtn');
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...';
+                    btn.disabled = true;
+                    
+                    // Enviar o formulário
+                    e.target.submit();
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
