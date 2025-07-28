@@ -1,0 +1,11 @@
+Problema Reportado no Inventário
+
+Detalhes:
+- Equipamento: {{ equipamento }}
+- Identificador: {{ identificador }}
+- Data do Inventário: {{ data_inventario }}
+- Reportado por: {{ colaborador }}
+- Problema(s): {{ problemas }}
+- Observações: {{ observacao }}
+
+Para mais detalhes e ações, acesse: {{ detalhes_url }}

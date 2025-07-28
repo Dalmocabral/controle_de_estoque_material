@@ -840,7 +840,6 @@ def devolucao_material(request):
 def registrar_inventario(request, pk):
     equipamento = get_object_or_404(Equipamento, pk=pk)
     
-    # Verifica se o equipamento está descartado
     if equipamento.status == 'DESCARTADO':
         messages.error(request, 'Este equipamento já está descartado e não pode ser inventariado!')
         return redirect('detalhe_equipamento', pk=pk)
@@ -853,13 +852,14 @@ def registrar_inventario(request, pk):
             inventario = form.save(commit=False)
             inventario.equipamento = equipamento
             inventario.colaborador = colaborador
-            
-            # ✅ Salva sempre o inventário, com ou sem problema
             inventario.save()
 
-            # ✅ Exibe mensagem conforme status do inventário
             if inventario.avaria or inventario.perda or inventario.nao_devolvido:
                 messages.warning(request, 'Inventário registrado com problemas! O gestor será notificado.')
+                try:
+                    enviar_email_problema_inventario(request, inventario)
+                except Exception as e:
+                    logger.error(f"Erro ao enviar notificação de problema: {str(e)}")
             else:
                 messages.success(request, 'Inventário registrado sem problemas.')
 
@@ -1021,3 +1021,82 @@ def relatorio_inventario_pdf(request):
         'opcoes_inventario': INVENTARIO_CHOICES
     }
     return render(request, 'estoque/selecionar_relatorio.html', context)
+
+
+def enviar_email_problema_inventario(request, inventario):
+    try:
+        # Obter apenas o grupo de gestores
+        try:
+            grupo_gestores = Group.objects.get(name='gestor')
+        except Group.DoesNotExist as e:
+            logger.warning(f"Grupo gestor não encontrado: {str(e)}")
+            return
+
+        # Buscar apenas gestores como destinatários
+        destinatarios = User.objects.filter(
+            groups__in=[grupo_gestores],
+            is_active=True
+        ).distinct()
+        
+        if not destinatarios:
+            logger.info("Nenhum gestor encontrado para notificação")
+            return
+        
+        emails = [user.email for user in destinatarios if user.email]
+        
+        if not emails:
+            logger.info("Nenhum email de gestor válido encontrado para notificação")
+            return
+        
+        # Preparar contexto do email
+        try:
+            detalhes_url = request.build_absolute_uri(
+                reverse('inventario_detalhe', args=[inventario.pk])
+            )
+        except Exception as e:
+            logger.error(f"Erro ao construir URL de detalhes: {str(e)}")
+            detalhes_url = "URL indisponível"
+
+        problemas = []
+        if inventario.avaria:
+            problemas.append("Avaria")
+        if inventario.perda:
+            problemas.append("Perda")
+        if inventario.nao_devolvido:
+            problemas.append("Não devolvido")
+
+        context = {
+            'numero_inventario': inventario.pk,
+            'equipamento': inventario.equipamento.equipamento,
+            'identificador': inventario.equipamento.identificador,
+            'data_inventario': inventario.data_inventario.strftime('%d/%m/%Y %H:%M'),
+            'colaborador': inventario.colaborador.nome,
+            'problemas': ', '.join(problemas),
+            'observacao': inventario.observacao,
+            'detalhes_url': detalhes_url,
+            'site_url': request.build_absolute_uri('/')
+        }
+        
+        # Renderizar templates
+        assunto = f'Problema no Inventário - {inventario.equipamento.equipamento}'
+        mensagem = render_to_string('estoque/emails/problema_inventario.txt', context)
+        mensagem_html = render_to_string('estoque/emails/problema_inventario.html', context)
+        
+        # Enviar email
+        try:
+            send_mail(
+                subject=assunto,
+                message=mensagem,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=emails,
+                html_message=mensagem_html,
+                fail_silently=False
+            )
+            logger.info(f"Email de problema no inventário enviado para {len(emails)} gestores")
+        except Exception as e:
+            logger.error(f"Erro ao enviar email: {str(e)}")
+            raise
+        
+    except Exception as e:
+        logger.error(f"Erro no processo de notificação por email: {str(e)}")
+        raise

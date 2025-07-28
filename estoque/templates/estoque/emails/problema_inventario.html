@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novo Agendamento - {{ numero_agendamento }}</title>
+    <title>Problema no Inventário - {{ equipamento }}</title>
     <style>
         /* Reset e estilos base */
         body {
@@ -27,7 +27,7 @@
         
         /* Cabeçalho */
         .header {
-            background-color: #2c3e50;
+            background-color: #dc3545; /* Vermelho para indicar problema */
             padding: 25px 20px;
             text-align: center;
             color: white;
@@ -48,7 +48,7 @@
         /* Card de informações */
         .info-card {
             background: #f8f9fa;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid #dc3545; /* Borda vermelha */
             padding: 20px;
             border-radius: 4px;
             margin-bottom: 25px;
@@ -67,41 +67,26 @@
             font-weight: 600;
         }
         
-        /* Tabela de peças */
-        .pecas-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 25px 0;
-            font-size: 14px;
+        /* Seção de problemas */
+        .problemas-section {
+            margin-top: 25px;
         }
         
-        .pecas-table th {
-            background-color: #3498db;
-            color: white;
-            text-align: left;
-            padding: 12px 15px;
+        .problemas-title {
+            color: #2c3e50;
+            border-bottom: 2px solid #dc3545; /* Vermelho */
+            padding-bottom: 8px;
+            margin-bottom: 15px;
         }
         
-        .pecas-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #dddddd;
-            vertical-align: middle;
+        .problemas-list {
+            list-style-type: none;
+            padding: 0;
         }
         
-        .pecas-table tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        
-        .pecas-table tr:hover {
-            background-color: #f1f1f1;
-        }
-        
-        .peca-img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 4px;
-            border: 1px solid #eaeaea;
+        .problemas-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eaeaea;
         }
         
         /* Botão */
@@ -113,7 +98,7 @@
         .btn {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #3498db;
+            background-color: #dc3545; /* Vermelho */
             color: white;
             text-decoration: none;
             border-radius: 4px;
@@ -122,7 +107,7 @@
         }
         
         .btn:hover {
-            background-color: #2980b9;
+            background-color: #c82333;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
@@ -155,87 +140,60 @@
             .detalhes-item strong {
                 margin-bottom: 4px;
             }
-            
-            .pecas-table {
-                display: block;
-                overflow-x: auto;
-            }
         }
     </style>
 </head>
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>Novo Agendamento Registrado</h1>
+            <h1>Problema Reportado no Inventário</h1>
         </div>
         
         <div class="content">
             <div class="info-card">
                 <div class="detalhes">
                     <div class="detalhes-item">
-                        <strong>Número do Agendamento:</strong>
-                        <span>#{{ numero_agendamento }}</span>
+                        <strong>Equipamento:</strong>
+                        <span>{{ equipamento }}</span>
                     </div>
                     <div class="detalhes-item">
-                        <strong>Solicitante:</strong>
-                        <span>{{ solicitante }}</span>
+                        <strong>Identificador:</strong>
+                        <span>{{ identificador }}</span>
                     </div>
                     <div class="detalhes-item">
-                        <strong>Data/Hora:</strong>
-                        <span>{{ data_hora }}</span>
+                        <strong>Data do Inventário:</strong>
+                        <span>{{ data_inventario }}</span>
                     </div>
                     <div class="detalhes-item">
-                        <strong>Setor:</strong>
-                        <span>{{ setor }}</span>
-                    </div>
-                    <div class="detalhes-item">
-                        <strong>Local de Uso:</strong>
-                        <span>{{ local_uso }}</span>
-                    </div>
-                    <div class="detalhes-item">
-                        <strong>Tipo de Operação:</strong>
-                        <span>{{ tipo_operacao }}</span>
+                        <strong>Reportado por:</strong>
+                        <span>{{ colaborador }}</span>
                     </div>
                 </div>
             </div>
             
-            <h3 style="margin-top: 25px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px;">Peças Agendadas</h3>
-            
-            <table class="pecas-table">
-                <thead>
-                    <tr>
-                        <th>Imagem</th>
-                        <th>Nome da Peça</th>
-                        <th>Número de Identificação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for peca in pecas_agendadas %}
-                    <tr>
-                        <td>
-                        {% if peca.imagem_url %}
-                        <img src="{{ peca.imagem_url }}" alt="{{ peca.nome }}" class="peca-img">
-                        {% else %}
-                        <div style="width: 50px; height: 50px; background-color: #eaeaea; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
-                            <span style="font-size: 10px; color: #7f8c8d;">Sem imagem</span>
-                        </div>
-                        {% endif %}
-                    </td>
-                        <td>{{ peca.nome }}</td>
-                        <td>{{ peca.numero_identificacao }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="problemas-section">
+                <h3 class="problemas-title">Detalhes do Problema</h3>
+                
+                <div class="detalhes">
+                    <div class="detalhes-item">
+                        <strong>Tipo(s) de Problema:</strong>
+                        <span>{{ problemas }}</span>
+                    </div>
+                    <div class="detalhes-item">
+                        <strong>Observações:</strong>
+                        <span>{{ observacao }}</span>
+                    </div>
+                </div>
+            </div>
             
             <div class="btn-container">
-                <a href="#" class="btn">Acessar Detalhes Completos</a>
+                <a href="#" class="btn">Ver Detalhes do Inventário</a>
             </div>
         </div>
         
         <div class="footer">
             <p>Este é um e-mail automático, por favor não responda diretamente.</p>
-            <p>&copy; {% now "Y" %} Sistema de Agendamentos. Todos os direitos reservados.</p>
+            <p>&copy; {% now "Y" %} Sistema de Inventário. Todos os direitos reservados.</p>
         </div>
     </div>
 </body>
