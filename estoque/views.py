@@ -292,15 +292,24 @@ def ler_qrcode(request):
     return render(request, 'estoque/qrcode_leitura.html')
 
 
-
 @login_required
 def estoque_resumido(request):
     search = request.GET.get('search', '')
 
+    # Primeiro filtramos os equipamentos ativos
+    equipamentos_ativos = Equipamento.objects.filter(status='ATIVO')
+    
+    # Depois aplicamos a busca se houver
+    if search:
+        equipamentos_ativos = equipamentos_ativos.filter(
+            Q(equipamento__icontains=search) | 
+            Q(identificador__icontains=search)
+        )
+
+    # Agora agrupamos os resultados
     agrupados = (
-        Equipamento.objects
-        .filter(equipamento__icontains=search)
-        .values('equipamento')
+        equipamentos_ativos
+        .values('equipamento')  # Agora chamamos values() no QuerySet, não no objeto Q
         .annotate(
             total_quantidade=Sum('quantidade'),
             ultimo_registro=Max('registro')
@@ -312,7 +321,11 @@ def estoque_resumido(request):
     hoje = timezone.now().date()
 
     for item in agrupados:
-        registros = Equipamento.objects.filter(equipamento=item['equipamento'])
+        registros = Equipamento.objects.filter(
+            equipamento=item['equipamento'],
+            status='ATIVO'  # Garantimos que só pegamos os ativos
+        )
+        
         if not registros.exists():
             continue
 
@@ -362,7 +375,10 @@ def estoque_detalhado(request, nome_equipamento):
     """
     View que exibe a lista de equipamentos detalhados e os modais de inventário.
     """
-    equipamentos = Equipamento.objects.filter(equipamento=nome_equipamento).order_by('registro')
+    equipamentos = Equipamento.objects.filter(
+        equipamento=nome_equipamento,
+        status='ATIVO'  # ← Filtra apenas itens ativos
+    ).order_by('registro')
     
     # Criamos uma instância vazia do formulário para passar ao template,
     # embora não seja estritamente necessário, pois o modal tem seus próprios campos.
@@ -888,6 +904,8 @@ def inventario_detalhe(request, pk):
 
 def is_gestor(user):
     return user.groups.filter(name='gestor').exists() or user.is_superuser
+
+
 @login_required
 @user_passes_test(is_gestor, login_url='dashboard')
 def remover_peca_estoque(request, pk):
@@ -895,27 +913,37 @@ def remover_peca_estoque(request, pk):
     
     if request.method == 'POST':
         try:
-            # Marcar o equipamento como descartado
-            equipamento = inventario.equipamento
-            equipamento.status = 'DESCARTADO'
-            equipamento.data_descarte = timezone.now()
-            
-            # Usar apenas a observação do inventário como motivo
-            equipamento.motivo_descarte = (
-                f"Motivo do inventário: {inventario.observacao}\n"
-                f"Descarte realizado por: {request.user.username} em {timezone.now().strftime('%d/%m/%Y %H:%M')}"
-            )
-            equipamento.save()
+            with transaction.atomic():
+                # Diminuir a quantidade em estoque
+                equipamento = inventario.equipamento
+                
+                if equipamento.quantidade > 0:
+                    equipamento.quantidade -= 1
+                    
+                    # Marcar como descartado se a quantidade chegar a zero
+                    if equipamento.quantidade == 0:
+                        equipamento.status = 'DESCARTADO'
+                        equipamento.data_descarte = timezone.now()
+                    
+                    # Registrar motivo do descarte
+                    equipamento.motivo_descarte = (
+                        f"Motivo do inventário: {inventario.observacao}\n"
+                        f"Descarte realizado por: {request.user.username} em {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+                    )
+                    equipamento.save()
 
-            # Marcar o inventário como descartado
-            inventario.descarte = True
-            inventario.save()
+                    # Marcar o inventário como validado
+                    inventario.validado = True
+                    inventario.save()
 
-            messages.success(request, 'Peça marcada como descartada com sucesso!')
+                    messages.success(request, 'Quantidade em estoque atualizada com sucesso!')
+                else:
+                    messages.error(request, 'Não há quantidade disponível para descarte!')
+                
             return redirect('inventario_problemas')
         
         except Exception as e:
-            messages.error(request, f'Erro ao marcar como descartado: {str(e)}')
+            messages.error(request, f'Erro ao atualizar estoque: {str(e)}')
             return redirect('inventario_detalhe', pk=pk)
 
     return redirect('inventario_detalhe', pk=pk)
