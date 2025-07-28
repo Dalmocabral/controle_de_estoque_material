@@ -154,6 +154,131 @@
     .nav.flex-column .nav-item .nav-link {
       padding-left: 1rem;
     }
+
+    /* Estilos melhorados para notificações */
+.notification-bell {
+    position: relative;
+    font-size: 1.25rem;
+    color: #495057;
+    transition: all 0.3s;
+}
+
+.notification-bell:hover {
+    color: var(--primary-color);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background-color: #dc3545;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 0 0 2px white;
+}
+
+.dropdown-menu-notifications {
+    width: 380px;
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+    padding: 0;
+}
+
+.notification-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: #f8f9fa;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.notification-footer {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: #f8f9fa;
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.notification-item {
+    padding: 0.75rem 1rem;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.unread {
+    border-left-color: var(--primary-color);
+    background-color: rgba(0, 121, 186, 0.05);
+}
+
+.notification-item:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.notification-title {
+    font-weight: 600;
+    color: #212529;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-type {
+    font-size: 0.75rem;
+    color: white;
+    background-color: var(--primary-color);
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+}
+
+.notification-message {
+    font-size: 0.875rem;
+    color: #495057;
+    margin: 0.25rem 0;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.notification-time i {
+    font-size: 0.65rem;
+}
+
+.notification-empty {
+    padding: 1.5rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.notification-empty i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #dee2e6;
+}
   </style>
 
   {% block extra_css %}{% endblock %}
@@ -185,34 +310,34 @@
             <i class="bi bi-chevron-down ms-auto submenu-arrow"></i>
           </a>
           <div class="collapse" id="agendamentoSubmenu">
-    <ul class="nav flex-column ps-4">
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'agendar_view' %}">
-                <i class="bi bi-calendar-plus"></i> Novo Agendamento
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'lista_agendamento' %}">
-                <i class="bi bi-calendar-check"></i> Lista de Agendamentos
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'saida_material' %}">
-                <i class="bi bi-box-arrow-up"></i> Saída de Materiais
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'devolucao_material' %}">
-                <i class="bi bi-box-arrow-in-down"></i> Devolução de Materiais
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'lista_saidas' %}">
-                <i class="bi bi-clipboard2-data"></i> Histórico de Movimentações
-            </a>
-        </li>
-    </ul>
-</div>
+            <ul class="nav flex-column ps-4">
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'agendar_view' %}">
+                  <i class="bi bi-calendar-plus"></i> Novo Agendamento
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'lista_agendamento' %}">
+                  <i class="bi bi-calendar-check"></i> Lista de Agendamentos
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'saida_material' %}">
+                  <i class="bi bi-box-arrow-up"></i> Saída de Materiais
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'devolucao_material' %}">
+                  <i class="bi bi-box-arrow-in-down"></i> Devolução de Materiais
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'lista_saidas' %}">
+                  <i class="bi bi-clipboard2-data"></i> Histórico de Movimentações
+                </a>
+              </li>
+            </ul>
+          </div>
         </li>
         <li class="nav-item">
           <a class="nav-link" data-bs-toggle="collapse" href="#equipamentoSubmenu" role="button" aria-expanded="false"
@@ -235,27 +360,26 @@
             </ul>
           </div>        
         <li class="nav-item">
-    <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#inventarioCollapse">
-        <i class="bi bi-box-seam"></i>
-        <span>Inventários</span>
-        <i class="bi bi-chevron-down ms-auto"></i>
-    </a>
-    <div id="inventarioCollapse" class="collapse">
-        <ul class="nav nav-pills flex-column ms-3">
-            <li class="nav-item">
+          <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#inventarioCollapse">
+            <i class="bi bi-box-seam"></i>
+            <span>Inventários</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </a>
+          <div id="inventarioCollapse" class="collapse">
+            <ul class="nav nav-pills flex-column ms-3">
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'inventario_problemas' %}">
-                    <i class="bi bi-list-ul"></i> Lista de Inventários
+                  <i class="bi bi-list-ul"></i> Lista de Inventários
                 </a>
-            </li>
-            <li class="nav-item">
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'relatorio_inventario_pdf' %}">
-                    <i class="bi bi-file-earmark-text"></i> Relatório de Inventário
+                  <i class="bi bi-file-earmark-text"></i> Relatório de Inventário
                 </a>
-            </li>
-            
-        </ul>
-    </div>
-</li>
+              </li>
+            </ul>
+          </div>
+        </li>
 
         <!-- Item Configuração com Submenu -->
         <li class="nav-item">
@@ -294,13 +418,47 @@
   <!-- Main Content -->
   <div class="main-content">
     <!-- Top Header -->
-    <header class="top-header">
-      <button class="btn btn-primary d-lg-none" id="sidebarToggle">
+    <!-- Top Header -->
+<header class="top-header">
+    <button class="btn btn-primary d-lg-none" id="sidebarToggle">
         <i class="bi bi-list"></i>
-      </button>
-      <h4 class="mb-0">Sistema de Estoque</h4>
-      <div class="clock" id="clock"></div>
-    </header>
+    </button>
+    <h4 class="mb-0">Sistema de Estoque</h4>
+    <div class="d-flex align-items-center gap-3">
+        <!-- Notificações -->
+        <div class="dropdown">
+            <button class="btn btn-link text-dark p-0 position-relative notification-bell" 
+                    type="button" id="dropdownNotificacoes" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-bell"></i>
+                <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-notifications" 
+                aria-labelledby="dropdownNotificacoes">
+                <li class="notification-header">
+                    <h6 class="mb-0 d-flex align-items-center justify-content-between">
+                        <span>Notificações</span>
+                        <small class="badge bg-primary" id="notification-count">0</small>
+                    </h6>
+                </li>
+                <div id="notification-list">
+                    <li class="notification-empty">
+                        <i class="bi bi-bell"></i>
+                        <p class="mb-0">Nenhuma notificação</p>
+                    </li>
+                </div>
+                <li class="notification-footer">
+                    <a class="btn btn-sm btn-outline-primary w-100" href="{% url 'lista_agendamento' %}">
+                        Ver todas
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Clock -->
+        <div class="clock" id="clock"></div>
+    </div>
+</header>
 
     <!-- Page Content -->
     <div class="content-wrapper">
@@ -319,24 +477,162 @@
   <script>
     // Toggle sidebar in mobile
     document.getElementById('sidebarToggle').addEventListener('click', function () {
-      document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sidebar').classList.toggle('active');
     });
 
     // Live clock
     function updateClock() {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-      document.getElementById('clock').textContent = timeString;
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('clock').textContent = timeString;
     }
     setInterval(updateClock, 1000);
     updateClock();
-  </script>
+
+    // Função para pegar o cookie CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+// Função para carregar notificações
+function loadNotifications() {
+    fetch('/dashboard/api/notificacoes/')
+        .then(response => {
+            if (!response.ok) throw new Error('Erro ao carregar notificações');
+            return response.json();
+        })
+        .then(data => {
+            const notificationList = document.getElementById('notification-list');
+            const badge = document.getElementById('notification-badge');
+            const countBadge = document.getElementById('notification-count');
+            
+            if (data.notificacoes && data.notificacoes.length > 0) {
+                // Atualizar badges
+                if (data.unread_count > 0) {
+                    badge.textContent = data.unread_count > 9 ? '9+' : data.unread_count;
+                    badge.style.display = 'flex';
+                    countBadge.textContent = data.unread_count > 9 ? '9+' : data.unread_count;
+                } else {
+                    badge.style.display = 'none';
+                    countBadge.textContent = '0';
+                }
+                
+                // Construir lista de notificações
+                notificationList.innerHTML = '';
+                data.notificacoes.forEach(notif => {
+                    const item = document.createElement('li');
+                    item.className = `notification-item ${notif.lido ? '' : 'unread'}`;
+                    item.setAttribute('data-id', notif.id);
+                    item.setAttribute('data-url', notif.url);
+                    item.innerHTML = `
+                        <div class="notification-title">
+                            <span class="notification-type">${notif.tipo}</span>
+                            <small class="notification-time">
+                                <i class="bi bi-clock"></i> ${notif.tempo}
+                            </small>
+                        </div>
+                        <div class="notification-message">${notif.mensagem}</div>
+                    `;
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        markAsRead(notif.id, notif.url);
+                    });
+                    notificationList.appendChild(item);
+                });
+            } else {
+                notificationList.innerHTML = `
+                    <li class="notification-empty">
+                        <i class="bi bi-bell"></i>
+                        <p class="mb-0">Nenhuma notificação</p>
+                    </li>
+                `;
+                badge.style.display = 'none';
+                countBadge.textContent = '0';
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            const notificationList = document.getElementById('notification-list');
+            notificationList.innerHTML = `
+                <li class="notification-empty text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <p class="mb-0">Erro ao carregar notificações</p>
+                </li>
+            `;
+            document.getElementById('notification-badge').style.display = 'none';
+            document.getElementById('notification-count').textContent = '0';
+        });
+}
+
+    // Função para marcar como lida
+    function markAsRead(notificationId, url) {
+        fetch(`/dashboard/api/notificacoes/marcar-lida/${notificationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro ao marcar como lida');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                loadNotifications();
+                // Redirecionar se houver URL e não for #
+                if (url && url !== '#') {
+                    window.location.href = url;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao marcar notificação como lida:', error);
+        });
+    }
+
+    // Inicialização quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', function() {
+        // Carrega notificações imediatamente
+        loadNotifications();
+        
+        // Atualiza a cada 30 segundos
+        setInterval(loadNotifications, 30000);
+        
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('dropdownNotificacoes');
+            const dropdownMenu = document.querySelector('.dropdown-menu-notifications');
+            
+            if (dropdown && dropdownMenu) {
+                if (!dropdown.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdown);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            }
+        });
+    });
+</script>
 
   {% block extra_js %}{% endblock %}
 </body>
-
 </html>

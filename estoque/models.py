@@ -339,3 +339,31 @@ class InventarioEquipamento(models.Model):
 
     def __str__(self):
         return f"Inventário para {self.equipamento} por {self.colaborador.nome}"
+
+
+
+# models.py
+class Notificacao(models.Model):
+    TIPO_CHOICES = [
+        ('AGENDAMENTO', 'Agendamento'),
+        ('INVENTARIO', 'Inventário'),
+        ('ALERTA', 'Alerta')
+    ]
+    
+    destinatario = models.ForeignKey(User, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    mensagem = models.TextField()
+    lido = models.BooleanField(default=False)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    url = models.CharField(max_length=200, blank=True, default='#')
+    
+    class Meta:
+        ordering = ['-criado_em']
+        verbose_name = 'Notificação'
+        verbose_name_plural = 'Notificações'
+    
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.destinatario.username}"
+    
+    def get_absolute_url(self):
+        return self.url

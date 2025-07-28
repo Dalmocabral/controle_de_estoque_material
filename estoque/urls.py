@@ -2,6 +2,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 from .views import CustomLoginView
+from django.views.decorators.http import require_POST
 
 urlpatterns = [
     # ====================== AUTENTICAÇÃO ======================
@@ -57,6 +58,11 @@ urlpatterns = [
     path('dashboard/inventario/<int:pk>/remover/', views.remover_peca_estoque, name='remover_peca_estoque'),
     path('dashboard/inventario/<int:pk>/', views.inventario_detalhe, name='inventario_detalhe'),
     path('dashboard/relatorios/inventario/', views.relatorio_inventario_pdf, name='relatorio_inventario_pdf'),
+    
+    path('dashboard/api/notificacoes/', views.notificacoes_api, name='notificacoes_api'),
+    path('dashboard/api/notificacoes/marcar-lida/<int:pk>/', 
+         require_POST(views.marcar_notificacao_lida), 
+         name='marcar_notificacao_lida'),
 
     
 

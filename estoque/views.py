@@ -28,13 +28,18 @@ from django.db import IntegrityError
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
-from datetime import datetime
+from datetime import datetime, timedelta
+
 import os
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.http import HttpRequest
 import logging
+from .models import Notificacao
+from django.http import JsonResponse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 # Local Apps
 from .forms import ColaboradorForm, EquipamentoForm, CertificacaoForm, CertificacaoFormSet, AgendamentoForm, ChecklistSaidaForm, TermoRetiradaForm, DevolucaoMaterialForm, InventarioForm
@@ -415,6 +420,16 @@ def agendar_view(request):
                 agendamento.status = 'AG'
                 agendamento.save()
 
+                # Etapa 1.1: Notificação
+                grupo_destinatarios = Group.objects.filter(name__in=['gestor', 'assistente-adm'])
+                usuarios_destinatarios = User.objects.filter(groups__in=grupo_destinatarios).distinct()
+                for user in usuarios_destinatarios:
+                    Notificacao.objects.create(
+                        destinatario=user,
+                        tipo='AGENDAMENTO',
+                        mensagem=f'Novo agendamento #{agendamento.numero_agendamento} foi criado.'
+                    )
+
                 # Etapa 2: Processar peças agendadas
                 pecas_ids = request.POST.get('pecas_ids', '')
                 if pecas_ids:
@@ -427,17 +442,15 @@ def agendar_view(request):
                                 )
                             except Exception as e:
                                 logger.error(f"Erro ao adicionar peça {pid}: {str(e)}")
-                                # Decida aqui se quer continuar ou interromper
                                 continue
 
-                # Etapa 3: Enviar notificação por email (em segundo plano)
+                # Etapa 3: Enviar notificação por email
                 try:
                     enviar_email_notificacao(request, agendamento)
                 except Exception as e:
                     logger.error(f"Erro ao enviar email: {str(e)}")
-                    # Não interrompe o fluxo principal se o email falhar
 
-                # Resposta para requisições AJAX
+                # Resposta AJAX
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': True,
@@ -457,8 +470,10 @@ def agendar_view(request):
                 messages.error(request, f"Ocorreu um erro ao salvar o agendamento: {str(e)}")
                 return render(request, 'estoque/agendamento_form.html', {'form': form})
     
+    # Se não for POST, só renderiza o formulário vazio
     form = AgendamentoForm()
     return render(request, 'estoque/agendamento_form.html', {'form': form})
+
 
 def enviar_email_notificacao(request, agendamento):
     try:
@@ -1100,3 +1115,65 @@ def enviar_email_problema_inventario(request, inventario):
     except Exception as e:
         logger.error(f"Erro no processo de notificação por email: {str(e)}")
         raise
+ 
+ 
+@login_required
+def notificacoes_api(request):
+    try:
+        # Filtra notificações por grupo
+        base_query = Notificacao.objects.filter(destinatario=request.user)
+        
+        # Filtros adicionais baseados no grupo do usuário
+        if request.user.groups.filter(name='gestor').exists():
+            base_query = base_query.filter(
+                Q(tipo='AGENDAMENTO') | Q(tipo='INVENTARIO'))
+        else:
+            base_query = base_query.filter(tipo='AGENDAMENTO')
+        
+        # Primeiro conta as não lidas
+        unread_count = base_query.filter(lido=False).count()
+        
+        # Depois aplica o slice para pegar as últimas 10
+        notificacoes = base_query.order_by('-criado_em')[:10]
+        
+        def format_timesince(dt):
+            diff = timezone.now() - dt
+            if diff < timedelta(minutes=1):
+                return 'Agora mesmo'
+            elif diff < timedelta(hours=1):
+                return f'{diff.seconds // 60} minutos atrás'
+            elif diff < timedelta(days=1):
+                return f'{diff.seconds // 3600} horas atrás'
+            else:
+                return f'{diff.days} dias atrás'
+        
+        data = {
+            'unread_count': unread_count,
+            'notificacoes': [
+                {
+                    'id': n.id,
+                    'tipo': n.get_tipo_display(),
+                    'mensagem': n.mensagem,
+                    'lido': n.lido,
+                    'tempo': format_timesince(n.criado_em),
+                    'url': n.get_absolute_url()
+                }
+                for n in notificacoes
+            ]
+        }
+        
+        return JsonResponse(data)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def marcar_notificacao_lida(request, pk):
+    try:
+        notificacao = Notificacao.objects.get(pk=pk, destinatario=request.user)
+        notificacao.lido = True
+        notificacao.save()
+        return JsonResponse({'success': True})
+    except Notificacao.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Notificação não encontrada'}, status=404)
